@@ -1,0 +1,34 @@
+{
+  "variables": [
+    {
+      "name": "ENGLANDSOFTWARE_PORT",
+      "description": "TCP port the HTTP server listens on. Defaults to 8493 and should match the published container port.",
+      "example": "8493",
+      "required": false
+    },
+    {
+      "name": "ENGLANDSOFTWARE_ADMIN_USERNAME",
+      "description": "Username for the admin inbox sign in.",
+      "example": "admin",
+      "required": true
+    },
+    {
+      "name": "ENGLANDSOFTWARE_ADMIN_PASSWORD",
+      "description": "Password for the admin inbox sign in. Set a unique strong value in config/.env.",
+      "example": "replace-with-a-unique-strong-password",
+      "required": true
+    },
+    {
+      "name": "ENGLANDSOFTWARE_SECURE_COOKIES",
+      "description": "Set to true when the site is served over HTTPS so admin cookies use the Secure attribute.",
+      "example": "true",
+      "required": false
+    },
+    {
+      "name": "ENGLANDSOFTWARE_TRUSTED_PROXY_CIDRS",
+      "description": "Comma-separated CIDR ranges of trusted reverse proxies whose forwarded client IP headers may be used.",
+      "example": "127.0.0.1/32",
+      "required": false
+    }
+  ]
+}

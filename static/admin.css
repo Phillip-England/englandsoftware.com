@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root { color-scheme:light; font-family:Manrope,Arial,sans-serif; }
+* { box-sizing:border-box; }
+body { background:#f7f7f5; color:#111; margin:0; min-height:100vh; }
+h1,h2 { font-family:'Space Grotesk',sans-serif; letter-spacing:-.055em; }
+button,input { font:inherit; }
+button { background:#111; border:1px solid #111; color:#fff; cursor:pointer; font-size:13px; font-weight:800; min-height:45px; padding:10px 17px; }
+button:hover { background:#3f68e8; border-color:#3f68e8; }
+button:focus-visible,input:focus-visible,a:focus-visible { outline:2px solid #3f68e8; outline-offset:3px; }
+.login-panel { background:#fff; border:1px solid #ddd; margin:clamp(36px,11vh,120px) auto; max-width:440px; padding:clamp(25px,5vw,45px); width:calc(100% - 40px); }
+.login-panel h1 { font-size:36px; margin:26px 0; }
+.login-panel form,.login-panel label { display:grid; gap:12px; }
+.login-panel form { gap:24px; }
+.login-panel label { font-size:13px; font-weight:800; }
+.login-panel input { border:1px solid #aaa; min-height:48px; padding:10px 12px; width:100%; }
+.login-panel button { width:100%; }
+.error { background:#fff0ef; color:#8e1a13; font-size:13px; padding:12px; }
+.trap { position:absolute; height:1px; width:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.inbox { margin:0 auto; max-width:950px; padding:40px 20px 80px; }
+.inbox header { align-items:end; border-bottom:1px solid #bbb; display:flex; gap:20px; justify-content:space-between; padding-bottom:22px; }
+.inbox h1 { font-size:clamp(44px,8vw,70px); line-height:1; margin:4px 0 0; }
+.overline { color:#3f68e8; font-size:11px; font-weight:800; letter-spacing:.12em; margin:0; text-transform:uppercase; }
+.count { color:#666; font-size:12px; margin:24px 0; }
+.message { background:#fff; border:1px solid #ddd; margin:16px 0; padding:24px; }
+.message.unread { border-left:4px solid #3f68e8; }
+.message-top { display:flex; gap:18px; justify-content:space-between; }
+.message h2 { font-size:25px; margin:5px 0; }
+.message a { color:#2c54cc; font-size:13px; overflow-wrap:anywhere; }
+.message time { color:#777; font-size:12px; white-space:nowrap; }
+.status { color:#3f68e8; font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.body { line-height:1.7; margin:25px 0; overflow-wrap:anywhere; white-space:pre-wrap; }
+.actions { display:flex; flex-wrap:wrap; gap:10px; }
+button.quiet { background:transparent; border-color:#999; color:#111; }
+button.quiet:hover { background:#eee; border-color:#111; }
+button.danger { background:transparent; border-color:#ad3a30; color:#ad3a30; }
+button.danger:hover { background:#ad3a30; color:#fff; }
+.empty { color:#555; margin:50px 0; }
+@media(max-width:600px) { .message-top { display:block; }.message time { display:block; margin-top:12px; }.inbox header { align-items:start; } }

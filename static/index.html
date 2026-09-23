@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#030303" />
+    <meta name="description" content="England Software builds practical websites, dashboards, automations, and lightweight custom software for small businesses." />
+    <title>Websites &amp; Software for Small Businesses | England Software</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="home" data-active-section="home">
+    <canvas id="edge-particles" aria-hidden="true"></canvas>
+
+    <header class="site-header" aria-label="Primary">
+      <a class="brand" href="#home" aria-label="England Software home">
+        <span class="brand-mark"><img src="/static/logo.svg" alt="" /></span>
+        <span class="brand-name">England Software</span>
+      </a>
+      <nav class="site-nav" id="primary-navigation" aria-label="Page sections">
+        <a href="#services">Services</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main class="home-page">
+      <section class="hero page-section" id="home" aria-labelledby="hero-title">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <a class="hero-logo" href="#home" aria-label="England Software home"><img src="/static/logo.png" alt="England Software" /></a>
+          <p class="eyebrow"><span></span> Independent systems studio · Tulsa, Oklahoma <span></span></p>
+          <h1 id="hero-title">Make the business<br /><em>easier to run.</em></h1>
+          <p class="lede">
+            Websites, software, and automations for small businesses ready to replace busywork with a system that actually fits.
+          </p>
+          <div class="hero-actions" aria-label="Page actions">
+            <a class="button primary" href="#services">Explore Services</a>
+            <a class="button secondary" href="#about">About England Software</a>
+          </div>
+          <p class="hero-note"><i></i> Built around the way your team already works.</p>
+        </div>
+        <div class="hero-index" aria-hidden="true"><span>SCROLL TO EXPLORE</span><i></i><span>01 / 04</span></div>
+      </section>
+
+      <section class="page-section services-section" id="services" aria-labelledby="services-title">
+        <div class="section-heading">
+          <p class="eyebrow"><span></span> Services</p>
+          <h2 id="services-title">Practical systems built around real work.</h2>
+          <p>Projects can start with a focused website, a single internal workflow, or a connected set of tools. The goal is the same: make the business easier to understand and operate.</p>
+        </div>
+        <div class="service-list" aria-label="Available services">
+          <a class="service-item" href="/websites" style="--service-image:url('/static/images/websites-hero.webp')">
+            <h3>Professional Websites</h3>
+            <p>Clear, professional websites that build trust, explain your services, work well on every screen, and give customers an obvious way to contact you.</p>
+          </a>
+          <a class="service-item" href="/web-applications" style="--service-image:url('/static/images/web-applications-hero.webp')">
+            <h3>Web Applications</h3>
+            <p>Purpose-built invoicing, scheduling, tracking, reporting, and workflow systems designed around your operation.</p>
+          </a>
+          <a class="service-item" href="/managed-hosting" style="--service-image:url('/static/images/managed-hosting-hero.webp')">
+            <h3>Managed Hosting</h3>
+            <p>Reliable deployment, monitoring, updates, and ongoing support for the site or application your business depends on.</p>
+          </a>
+          <a class="service-item" href="/contract-engineering" style="--service-image:url('/static/images/contract-engineering-hero.webp')">
+            <h3>Contract Engineering</h3>
+            <p>Practical backend and web development support for teams that need an experienced engineer who can contribute quickly.</p>
+          </a>
+        </div>
+      </section>
+
+      <section class="page-section about-section" id="about" aria-labelledby="about-title">
+        <figure class="about-photo">
+          <img src="/static/me.webp" alt="Phillip England, founder of England Software" />
+        </figure>
+        <div class="about-copy">
+          <p class="eyebrow"><span></span> About England Software</p>
+          <h2 id="about-title">Built from firsthand small-business operations.</h2>
+          <p>I'm Phillip England. England Software grew out of my finance and operations work across two Chick-fil-A locations in Tulsa, where I learned software development by solving problems the business dealt with every day.</p>
+          <p>That work included invoice systems, translation workflows, automated team communication, websites, reporting graphs, and internal tools. It shaped how I approach every project now: understand the work first, build the simplest useful solution, and make sure the people using it can rely on it.</p>
+        </div>
+      </section>
+      <section class="page-section contact-section" id="contact" aria-labelledby="contact-title">
+        <div class="contact-intro">
+          <p class="eyebrow"><span></span> Contact</p>
+          <h2 id="contact-title">Let's talk about your project.</h2>
+          <p>Tell me what you're building or where your current systems are getting in the way.</p>
+        </div>
+        <form class="contact-form" action="/contact" method="post" aria-describedby="contact-status">
+          <div class="form-trap" aria-hidden="true"><label for="contact-website">Website</label><input id="contact-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+          <div class="contact-fields">
+            <div class="form-field">
+              <label for="contact-name">Name</label>
+              <input id="contact-name" name="name" type="text" autocomplete="name" placeholder="Your name" required maxlength="200" />
+            </div>
+            <div class="form-field">
+              <label for="contact-email">Email</label>
+              <input id="contact-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required maxlength="320" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="contact-message">What can I help with?</label>
+            <textarea id="contact-message" name="message" rows="6" placeholder="A little about your project or problem" required maxlength="10000"></textarea>
+          </div>
+          <div class="contact-form-footer">
+            <button class="button primary" type="submit">Send message</button>
+            <p id="contact-status" role="status">Your message goes directly to my inbox.</p>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>England Software</span>
+      <span>Practical websites and software systems for small businesses.</span>
+    </footer>
+
+    <script src="/static/particles.js"></script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
