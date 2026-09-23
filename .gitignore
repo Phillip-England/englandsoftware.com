@@ -1,0 +1,27 @@
+# Local credentials and runtime data
+/config/
+/data/
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Go build and test output
+/englandsoftware
+/bin/
+/build/
+/dist/
+*.test
+coverage.out
+coverage.html
+*.prof
+*.pprof
+
+# Local logs and machine files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
