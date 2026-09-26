@@ -43,9 +43,17 @@ func request(t *testing.T, a *application, method, path string, form url.Values,
 }
 func TestPagesAndContact(t *testing.T) {
 	a := testApp(t)
-	for _, path := range []string{"/", "/websites", "/web-applications", "/managed-hosting", "/contract-engineering", "/static/styles.css", "/static/admin.css", "/admin/login"} {
+	for _, path := range []string{"/", "/websites", "/static/styles.css", "/static/admin.css", "/admin/login"} {
 		if got := request(t, a, "GET", path, nil, nil).Code; got != 200 {
 			t.Errorf("GET %s: %d", path, got)
+		}
+	}
+	if got := request(t, a, "GET", "/contract-engineering", nil, nil); got.Code != http.StatusMovedPermanently || got.Header().Get("Location") != "/#services" {
+		t.Errorf("contract engineering redirect: status %d, location %q", got.Code, got.Header().Get("Location"))
+	}
+	for path, destination := range map[string]string{"/managed-hosting": "/websites#hosting", "/web-applications": "/websites#more"} {
+		if got := request(t, a, "GET", path, nil, nil); got.Code != http.StatusMovedPermanently || got.Header().Get("Location") != destination {
+			t.Errorf("%s redirect: status %d, location %q", path, got.Code, got.Header().Get("Location"))
 		}
 	}
 	if got := request(t, a, "GET", "/unknown", nil, nil).Code; got != 404 {
@@ -69,6 +77,31 @@ func TestPagesAndContact(t *testing.T) {
 	request(t, a, "POST", "/contact", form, nil)
 	if err := a.db.QueryRow("SELECT COUNT(*) FROM contact_messages").Scan(&count); err != nil || count != 1 {
 		t.Fatalf("honeypot stored message: %d, %v", count, err)
+	}
+}
+
+func TestPublicOffersMatchBusinessBrief(t *testing.T) {
+	a := testApp(t)
+	checks := []struct {
+		path  string
+		wants []string
+	}{
+		{"/", []string{"$300", "$200", "contact form", "free consultation"}},
+		{"/websites", []string{"$300", "$200", "$50", "$80 per hour", "One working contact form with email delivery", "Need more than a website?", "invoicing systems", "scheduling systems"}},
+	}
+	for _, check := range checks {
+		body := request(t, a, http.MethodGet, check.path, nil, nil).Body.String()
+		for _, want := range check.wants {
+			if !strings.Contains(body, want) {
+				t.Errorf("%s missing %q", check.path, want)
+			}
+		}
+		if strings.Contains(strings.ToLower(body), "contract engineering") {
+			t.Errorf("%s still advertises contract engineering", check.path)
+		}
+		if !strings.Contains(body, "https://www.facebook.com/profile.php?id=61594819109541") {
+			t.Errorf("%s missing Facebook link", check.path)
+		}
 	}
 }
 

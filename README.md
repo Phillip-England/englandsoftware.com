@@ -1,18 +1,22 @@
 # England Software
 
+**Slogan:** Make your business easier to run.
+
 A small Go website with a contact form and an unlinked admin inbox. Contact messages, failed login attempts, temporary IP lockouts, and admin sessions are stored in `data/main.sqlite`.
+
+Business identity, social links, current proposed offers, pricing, scope, and open decisions are collected in [business/MANIFEST.md](business/MANIFEST.md).
 
 ## Run locally
 
 Requires Go 1.26 or newer. From the project root:
 
 ```sh
-go run .
+make run
 ```
 
-Open <http://localhost:8493>. The admin sign in page is at <http://localhost:8493/admin/login>; it is intentionally absent from the public navigation. Set `ENGLANDSOFTWARE_PORT` to use another port.
+Open <http://localhost:8493>. The admin sign in page is at <http://localhost:8493/admin/login>; it is intentionally absent from the public navigation. Use `make run APP_PORT=9000` to choose another port.
 
-The server loads `config/.env` and creates `data/main.sqlite` and the `data` directory when needed. The database and credentials file are ignored by Git. The credentials file needs:
+`make run` creates `config/.env` with a random admin password on the first run and prints the credentials. Later runs reuse that file. The server creates `data/main.sqlite` and the `data` directory when needed. The database and credentials file are ignored by Git. To run `go run .` directly or use Docker, create a credentials file containing:
 
 ```dotenv
 ENGLANDSOFTWARE_ADMIN_USERNAME=admin

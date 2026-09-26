@@ -62,7 +62,7 @@ func main() {
 		}
 	}()
 	addr := ":" + port
-	log.Printf("England Software listening on %s", addr)
+	log.Printf("England Software listening at http://localhost:%s", port)
 	if err := http.ListenAndServe(addr, app.handler()); err != nil {
 		log.Fatal(err)
 	}
@@ -71,10 +71,21 @@ func main() {
 func publicPages(mux *http.ServeMux) {
 	mux.Handle("/static/", http.FileServer(http.FS(staticFiles)))
 	pages := map[string]string{
-		"/": "index.html", "/websites": "websites.html", "/web-applications": "web-applications.html",
-		"/managed-hosting": "managed-hosting.html", "/contract-engineering": "contract-engineering.html",
+		"/": "index.html", "/websites": "websites.html",
 	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/contract-engineering" {
+			http.Redirect(w, r, "/#services", http.StatusMovedPermanently)
+			return
+		}
+		if r.URL.Path == "/managed-hosting" {
+			http.Redirect(w, r, "/websites#hosting", http.StatusMovedPermanently)
+			return
+		}
+		if r.URL.Path == "/web-applications" {
+			http.Redirect(w, r, "/websites#more", http.StatusMovedPermanently)
+			return
+		}
 		page, ok := pages[r.URL.Path]
 		if !ok {
 			http.NotFound(w, r)

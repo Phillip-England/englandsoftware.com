@@ -3,6 +3,7 @@ APP_PORT ?= 8493
 .PHONY: run test build docker-build docker-run clean
 
 run:
+	go run ./cmd/localcreds
 	ENGLANDSOFTWARE_PORT=$(APP_PORT) go run .
 
 test:
