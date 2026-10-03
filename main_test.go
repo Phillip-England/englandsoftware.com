@@ -43,15 +43,15 @@ func request(t *testing.T, a *application, method, path string, form url.Values,
 }
 func TestPagesAndContact(t *testing.T) {
 	a := testApp(t)
-	for _, path := range []string{"/", "/websites", "/static/styles.css", "/static/admin.css", "/admin/login"} {
+	for _, path := range []string{"/", "/static/styles.css", "/static/admin.css", "/admin/login"} {
 		if got := request(t, a, "GET", path, nil, nil).Code; got != 200 {
 			t.Errorf("GET %s: %d", path, got)
 		}
 	}
-	if got := request(t, a, "GET", "/contract-engineering", nil, nil); got.Code != http.StatusMovedPermanently || got.Header().Get("Location") != "/#services" {
+	if got := request(t, a, "GET", "/contract-engineering", nil, nil); got.Code != http.StatusMovedPermanently || got.Header().Get("Location") != "/#consulting" {
 		t.Errorf("contract engineering redirect: status %d, location %q", got.Code, got.Header().Get("Location"))
 	}
-	for path, destination := range map[string]string{"/managed-hosting": "/websites#hosting", "/web-applications": "/websites#more"} {
+	for path, destination := range map[string]string{"/websites": "/#websites", "/managed-hosting": "/#websites", "/web-applications": "/#applications"} {
 		if got := request(t, a, "GET", path, nil, nil); got.Code != http.StatusMovedPermanently || got.Header().Get("Location") != destination {
 			t.Errorf("%s redirect: status %d, location %q", path, got.Code, got.Header().Get("Location"))
 		}
@@ -73,9 +73,20 @@ func TestPagesAndContact(t *testing.T) {
 	if err := a.db.QueryRow("SELECT COUNT(*) FROM contact_messages").Scan(&count); err != nil || count != 1 {
 		t.Fatalf("messages: %d, %v", count, err)
 	}
+	var optedIn int
+	if err := a.db.QueryRow("SELECT followup_opt_in FROM contact_messages WHERE id=1").Scan(&optedIn); err != nil || optedIn != 0 {
+		t.Fatalf("default follow-up preference: %d, %v", optedIn, err)
+	}
+	form.Set("followup_opt_in", "yes")
+	if got := request(t, a, "POST", "/contact", form, nil).Code; got != 303 {
+		t.Fatalf("opted-in contact: %d", got)
+	}
+	if err := a.db.QueryRow("SELECT followup_opt_in FROM contact_messages WHERE id=2").Scan(&optedIn); err != nil || optedIn != 1 {
+		t.Fatalf("opted-in follow-up preference: %d, %v", optedIn, err)
+	}
 	form.Set("website", "bot")
 	request(t, a, "POST", "/contact", form, nil)
-	if err := a.db.QueryRow("SELECT COUNT(*) FROM contact_messages").Scan(&count); err != nil || count != 1 {
+	if err := a.db.QueryRow("SELECT COUNT(*) FROM contact_messages").Scan(&count); err != nil || count != 2 {
 		t.Fatalf("honeypot stored message: %d, %v", count, err)
 	}
 }
@@ -86,8 +97,7 @@ func TestPublicOffersMatchBusinessBrief(t *testing.T) {
 		path  string
 		wants []string
 	}{
-		{"/", []string{"$300", "$200", "contact form", "free consultation"}},
-		{"/websites", []string{"$300", "$200", "$50", "$80 per hour", "One working contact form with email delivery", "Need more than a website?", "invoicing systems", "scheduling systems"}},
+		{"/", []string{"$50", "contact form", "launch day", "BUSINESS WEBSITES", "WEB APPLICATIONS", "SOFTWARE CONSULTING", "Invoicing", "id=\"contact\""}},
 	}
 	for _, check := range checks {
 		body := request(t, a, http.MethodGet, check.path, nil, nil).Body.String()
@@ -98,6 +108,11 @@ func TestPublicOffersMatchBusinessBrief(t *testing.T) {
 		}
 		if strings.Contains(strings.ToLower(body), "contract engineering") {
 			t.Errorf("%s still advertises contract engineering", check.path)
+		}
+		for _, oldPrice := range []string{"$300", "$200", "$80 per hour"} {
+			if strings.Contains(body, oldPrice) {
+				t.Errorf("%s still advertises old price %q", check.path, oldPrice)
+			}
 		}
 		if !strings.Contains(body, "https://www.facebook.com/profile.php?id=61594819109541") {
 			t.Errorf("%s missing Facebook link", check.path)
@@ -230,7 +245,8 @@ func TestExistingMessageTableMigrates(t *testing.T) {
 	defer a.db.Close()
 	var body string
 	var read int
-	if err := a.db.QueryRow("SELECT message,is_read FROM contact_messages WHERE id=1").Scan(&body, &read); err != nil || body != "Preserved" || read != 0 {
+	var optedIn int
+	if err := a.db.QueryRow("SELECT message,is_read,followup_opt_in FROM contact_messages WHERE id=1").Scan(&body, &read, &optedIn); err != nil || body != "Preserved" || read != 0 || optedIn != 0 {
 		t.Fatalf("migration: %q %d %v", body, read, err)
 	}
 }

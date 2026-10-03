@@ -1,17 +1,13 @@
-# Pricing guidelines
+# Pricing and billing
 
-[MANIFEST.md](MANIFEST.md) is the reference for the public offer. The [website services page](../static/websites.html) displays the upfront pricing chart.
+[MANIFEST.md](MANIFEST.md) is the reference for the public offer. The [services page](../static/websites.html) displays current pricing.
 
-| Offer | Price |
-| --- | --- |
-| One-page website with one working contact form and email delivery | $300 build |
-| First year of simple website hosting | $200 |
-| Annual hosting renewal | $200/year |
-| Domain and business email address setup, if needed | $50 one time |
-| Google Workspace setup, if chosen | $50 one time |
-| Later maintenance or changes | Quoted case by case at $80/hour |
-| Larger websites and web applications | Free consultation, then written quote |
+| Service | Public price | Billing rule |
+| --- | --- | --- |
+| Standard Business Website | **$50/month** | No upfront build fee. First payment due on launch day; monthly billing continues from that date. No long-term contract; cancel anytime, with service through the paid period. |
+| Web Application | **Quoted monthly per project** | One agreed monthly fee bundles build, hosting, and ongoing service. Define launch and billing milestones in the proposal. |
+| Software Consulting | **Quoted before an in-depth assessment** | Agree on the visit or assessment scope and fee before it begins. |
 
-The standard build plus first year of hosting totals **$500 upfront**. One optional $50 setup service makes the total **$550**. If both setup services are needed, the total is **$600** before third-party charges. The client pays domain registration, renewals, and email subscriptions directly; those prices are not part of the chart.
+The $50 website plan covers up to three informational pages and five sections total, one tested contact form, one prelaunch consolidated revision round, hosting, HTTPS, and routine hosting upkeep. The client supplies approved content and assets. Domain registration and renewal, business email subscriptions, and work outside the agreed scope are separate. Quote extra work before starting it; do not imply that unlimited edits come with the monthly plan.
 
-The $300 scope is one page with up to five sections, one working contact form, one consolidated revision round, and launch setup. Agree on deliverables and client-provided content in writing. Test form delivery before launch. Quote larger or unusual work before it begins.
+For applications, estimate the complete build and ongoing workload before quoting a monthly amount. Name features, delivery stages, hosting, support, changes, data handling, and exit terms in writing. Review actual time and direct costs after launch. For consulting, avoid inventing a fixed public price before the assessment format is defined.

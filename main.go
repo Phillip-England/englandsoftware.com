@@ -70,20 +70,22 @@ func main() {
 
 func publicPages(mux *http.ServeMux) {
 	mux.Handle("/static/", http.FileServer(http.FS(staticFiles)))
-	pages := map[string]string{
-		"/": "index.html", "/websites": "websites.html",
-	}
+	pages := map[string]string{"/": "index.html"}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/websites" {
+			http.Redirect(w, r, "/#websites", http.StatusMovedPermanently)
+			return
+		}
 		if r.URL.Path == "/contract-engineering" {
-			http.Redirect(w, r, "/#services", http.StatusMovedPermanently)
+			http.Redirect(w, r, "/#consulting", http.StatusMovedPermanently)
 			return
 		}
 		if r.URL.Path == "/managed-hosting" {
-			http.Redirect(w, r, "/websites#hosting", http.StatusMovedPermanently)
+			http.Redirect(w, r, "/#websites", http.StatusMovedPermanently)
 			return
 		}
 		if r.URL.Path == "/web-applications" {
-			http.Redirect(w, r, "/websites#more", http.StatusMovedPermanently)
+			http.Redirect(w, r, "/#applications", http.StatusMovedPermanently)
 			return
 		}
 		page, ok := pages[r.URL.Path]

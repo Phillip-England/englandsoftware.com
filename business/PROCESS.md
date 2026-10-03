@@ -1,16 +1,24 @@
-# Client journey
+# Client process
 
-See [MANIFEST.md](MANIFEST.md) for the current offer and boundaries.
+## Business Website
 
-## Starter website
+1. Learn what the business does and confirm the standard website scope fits.
+2. Agree in writing on up to three pages and five sections total, supplied content, form destination, one revision round, launch criteria, $50 monthly billing, and cancellation and transfer terms.
+3. Collect the client's approved words, logo, photos, and domain access or connection details.
+4. Build the site and gather one consolidated round of feedback.
+5. Test the contact form and launch. Start monthly billing on launch day; no upfront build fee.
+6. Provide hosting and routine upkeep during the paid service period. Quote new pages, content updates, and other changes before work begins.
 
-1. Talk through the business, site sections, and where contact form submissions should go.
-2. Collect approved words, business details, logo, testimonials, and photos the client can use.
-3. Agree in writing on the $300 scope, first-year hosting, optional setup services, timeline, and payment schedule.
-4. Build the page and complete one consolidated revision round.
-5. Connect the client-owned domain, launch, and test the form's email delivery.
-6. During hosting, provide domain renewal reminders and notifications. Quote later changes case by case at $80 per hour.
+## Web Application
 
-## Larger projects
+1. Learn the workflow and whether an application is needed.
+2. Define the first useful release, users, data, integrations, security, hosting, support, delivery stages, and exit terms.
+3. Present one written monthly quote for the agreed build, hosting, and ongoing service, with a clear billing start and change process.
+4. Build, review, launch, and support according to the agreed scope.
 
-Start with a free consultation. Define the users, business data, workflow, integrations, and first useful release. Provide a written scope and separate quote for build and ongoing hosting before work begins.
+## Software Consulting
+
+1. Hold an initial conversation about operational pain points.
+2. Agree on the assessment scope, price, schedule, and expected recommendation before an in-depth visit.
+3. Observe the operation when practical, identify gaps, and recommend a concrete next step.
+4. If an application is worthwhile, offer a separate monthly proposal. Ask permission before promotional follow-up and respect opt-outs.

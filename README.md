@@ -2,7 +2,7 @@
 
 **Slogan:** Make your business easier to run.
 
-A small Go website with a contact form and an unlinked admin inbox. Contact messages, failed login attempts, temporary IP lockouts, and admin sessions are stored in `data/main.sqlite`.
+A small Go website with a single public page, a contact form, and an unlinked admin inbox. The public page has six sections: hero, websites, applications, consultation, about, and contact. Former service URLs redirect to the relevant sections. Contact messages, failed login attempts, temporary IP lockouts, and admin sessions are stored in `data/main.sqlite`.
 
 Business identity, social links, current proposed offers, pricing, scope, and open decisions are collected in [business/MANIFEST.md](business/MANIFEST.md).
 
@@ -28,7 +28,7 @@ The local `config/.env` contains the admin password in plaintext. To change it, 
 
 ## Admin and form behavior
 
-- The contact form saves name, email, and message to SQLite. Its hidden honeypot silently discards bot submissions, and each IP can send three messages in a rolling 24 hour period.
+- The contact form saves name, email, message, and an optional consulting/application email follow-up preference to SQLite. The preference defaults to off and appears in the admin inbox. Its hidden honeypot silently discards bot submissions, and each IP can send three messages in a rolling 24 hour period.
 - Admin sign in checks the password from `config/.env`. A filled honeypot or wrong credentials count as failed attempts. Five failures from one IP within a rolling 24 hour period cause a 24 hour lockout.
 - Failed login rows and contact submission counters older than 24 hours, plus expired lockouts and sessions, are deleted on startup, hourly, and as relevant requests arrive. SQLite reuses pages freed by deleted rows, so the rate-limit tables do not accumulate daily history. Contact messages themselves remain until deleted from the inbox.
 - Admin sessions expire after 24 hours. The inbox can mark messages read or unread and delete them. These actions require a session and a CSRF token.

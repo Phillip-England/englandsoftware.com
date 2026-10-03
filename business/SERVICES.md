@@ -1,21 +1,19 @@
-# Services and boundaries
+# Services
 
-The current public offer is summarized in [MANIFEST.md](MANIFEST.md) and shown on the single [website services page](../static/websites.html).
+The public offers are summarized in [MANIFEST.md](MANIFEST.md) and presented on the [services page](../static/websites.html).
 
-## Starter website
+## Business Websites
 
-A $300 build provides one mobile-friendly page with up to five agreed sections, one working contact form that emails submissions to the client, one consolidated revision round, and launch setup. The client supplies business details, approved copy, brand assets, and photos they can use. Form delivery is configured and tested before launch.
+A standard informational business site costs $50 per month. The build, hosting, HTTPS, routine hosting upkeep, and one working contact form that sends submissions to the client's chosen email are included. The defined build covers up to three mobile-friendly pages and five content sections total, with one consolidated revision round before launch. Form delivery is tested before launch.
 
-More pages, extensive writing, branding, ecommerce, and integrations are quoted separately.
+The client supplies business details, approved copy, contact information, brand assets, and photos they may use. We agree on pages, sections, content, and launch criteria before work begins. A client-owned domain is connected to the site; registration and renewal costs are paid directly to the domain provider. Business email and provider subscriptions are separate.
 
-## Hosting, domain, and email
+Copywriting, new branding, online stores, integrations, extra pages, ongoing content edits, and substantial later changes are outside this plan. Quote them before work begins. A site needing more than a few informational pages belongs in the Web Application service.
 
-Hosting one simple site costs $200 for the first year and $200 per year thereafter. It includes HTTPS, routine hosting upkeep, and reminders and notifications when the client's domain is due for renewal. The client owns the domain and pays registration and renewal charges directly.
+## Web Applications
 
-If needed, domain and business email address setup is a one-time $50 service. Google Workspace setup is a separate one-time $50 service if chosen. The client owns email accounts and pays all provider subscriptions directly. Provider pricing and availability vary.
+Custom applications are quoted case by case at a monthly rate. The monthly fee bundles the agreed build, hosting, and ongoing service. Examples include a personal blogging system, reports or analytics hub, invoicing system, and larger or more functional website. Scope users, data, workflows, integrations, security, delivery stages, support, and changes in the proposal. Define what is included in the first release and how additions are priced.
 
-Later changes and maintenance are quoted case by case at $80 per hour. Routine hosting upkeep is included in the hosting price.
+## Software Consulting
 
-## Larger sites and web applications
-
-Larger websites, invoicing, scheduling, customer or job tracking, dashboards, integrations, and other custom systems begin with a free consultation and a written build and hosting quote. Scope depends on users, data, integrations, security, and ongoing support.
+Schedule time to understand the client's operations, observe work up close when practical, identify software opportunities, and recommend a useful next step. Agree on the scope, deliverable, and price before an in-depth visit or assessment. If a web application is the right remedy, quote it separately as a monthly service.

@@ -40,6 +40,7 @@ type message struct {
 	ID                                int64
 	Name, Email, Phone, Body, Created string
 	IsRead                            bool
+	FollowupOptIn                     bool
 }
 
 func loadEnvFile(path string) error {
@@ -105,7 +106,7 @@ func newApp(path string, cfg appConfig) (*application, error) {
 		return nil, err
 	}
 	for _, stmt := range []string{
-		`CREATE TABLE IF NOT EXISTS contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', message TEXT NOT NULL, created_at DATETIME NOT NULL, is_read INTEGER NOT NULL DEFAULT 0)`,
+		`CREATE TABLE IF NOT EXISTS contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', message TEXT NOT NULL, created_at DATETIME NOT NULL, is_read INTEGER NOT NULL DEFAULT 0, followup_opt_in INTEGER NOT NULL DEFAULT 0)`,
 		`CREATE TABLE IF NOT EXISTS login_failures (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, created_at DATETIME NOT NULL)`,
 		`CREATE INDEX IF NOT EXISTS idx_login_failures_ip_created_at ON login_failures (ip, created_at)`,
 		`CREATE TABLE IF NOT EXISTS banned_ips (ip TEXT PRIMARY KEY, banned_until DATETIME NOT NULL, created_at DATETIME NOT NULL)`,
@@ -118,8 +119,8 @@ func newApp(path string, cfg appConfig) (*application, error) {
 			return nil, err
 		}
 	}
-	// Existing installations have the original message table without this column.
-	var found bool
+	// Existing installations may lack either column.
+	found := make(map[string]bool)
 	rows, err := db.Query("PRAGMA table_info(contact_messages)")
 	if err != nil {
 		db.Close()
@@ -132,9 +133,7 @@ func newApp(path string, cfg appConfig) (*application, error) {
 		if err = rows.Scan(&cid, &name, &typ, &notnull, &def, &pk); err != nil {
 			break
 		}
-		if name == "is_read" {
-			found = true
-		}
+		found[name] = true
 	}
 	if err == nil {
 		err = rows.Err()
@@ -144,8 +143,14 @@ func newApp(path string, cfg appConfig) (*application, error) {
 		db.Close()
 		return nil, err
 	}
-	if !found {
+	if !found["is_read"] {
 		if _, err = db.Exec("ALTER TABLE contact_messages ADD COLUMN is_read INTEGER NOT NULL DEFAULT 0"); err != nil {
+			db.Close()
+			return nil, err
+		}
+	}
+	if !found["followup_opt_in"] {
+		if _, err = db.Exec("ALTER TABLE contact_messages ADD COLUMN followup_opt_in INTEGER NOT NULL DEFAULT 0"); err != nil {
 			db.Close()
 			return nil, err
 		}
@@ -299,6 +304,7 @@ func (a *application) contact(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.PostForm.Get("name"))
 	email := strings.TrimSpace(r.PostForm.Get("email"))
 	body := strings.TrimSpace(r.PostForm.Get("message"))
+	followupOptIn := r.PostForm.Get("followup_opt_in") == "yes"
 	if name == "" || email == "" || body == "" || len(name) > 200 || len(email) > 320 || len(body) > 10000 || !strings.Contains(email, "@") {
 		http.Error(w, "Please complete the name, email, and message fields.", http.StatusBadRequest)
 		return
@@ -324,7 +330,7 @@ func (a *application) contact(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Please try again later.", http.StatusTooManyRequests)
 		return
 	}
-	if _, err = tx.Exec("INSERT INTO contact_messages(name,email,message,created_at) VALUES(?,?,?,?)", name, email, body, stamp(now)); err != nil {
+	if _, err = tx.Exec("INSERT INTO contact_messages(name,email,message,created_at,followup_opt_in) VALUES(?,?,?,?,?)", name, email, body, stamp(now), followupOptIn); err != nil {
 		serverError(w, err)
 		return
 	}
@@ -477,7 +483,7 @@ func (a *application) inbox(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rows, err := a.db.Query("SELECT id,name,email,message,created_at,is_read FROM contact_messages ORDER BY id DESC")
+	rows, err := a.db.Query("SELECT id,name,email,message,created_at,is_read,followup_opt_in FROM contact_messages ORDER BY id DESC")
 	if err != nil {
 		serverError(w, err)
 		return
@@ -486,12 +492,13 @@ func (a *application) inbox(w http.ResponseWriter, r *http.Request) {
 	var messages []message
 	for rows.Next() {
 		var m message
-		var read int
-		if err = rows.Scan(&m.ID, &m.Name, &m.Email, &m.Body, &m.Created, &read); err != nil {
+		var read, followup int
+		if err = rows.Scan(&m.ID, &m.Name, &m.Email, &m.Body, &m.Created, &read, &followup); err != nil {
 			serverError(w, err)
 			return
 		}
 		m.IsRead = read != 0
+		m.FollowupOptIn = followup != 0
 		messages = append(messages, m)
 	}
 	if err = rows.Err(); err != nil {
@@ -542,7 +549,7 @@ func (a *application) deleteMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 var loginTemplate = template.Must(template.New("login").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Admin sign in | England Software</title><link rel="stylesheet" href="/static/admin.css"></head><body><main class="login-panel"><img src="/static/logo.svg" alt="" width="64" height="74"><h1>Admin sign in</h1>{{if .}}<p class="error" role="alert">{{.}}</p>{{end}}<form method="post" action="/admin/login"><label>Username<input name="username" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><div class="trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div><button type="submit">Sign in</button></form></main></body></html>`))
-var inboxTemplate = template.Must(template.New("inbox").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Messages | England Software</title><link rel="stylesheet" href="/static/admin.css"></head><body><main class="inbox"><header><div><p class="overline">England Software / Admin</p><h1>Messages</h1></div><form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="quiet" type="submit">Sign out</button></form></header>{{if .Messages}}{{range .Messages}}<article class="message {{if not .IsRead}}unread{{end}}"><div class="message-top"><div><span class="status">{{if .IsRead}}Read{{else}}New{{end}}</span><h2>{{.Name}}</h2><a href="mailto:{{.Email}}">{{.Email}}</a></div><time>{{.Created}}</time></div><p class="body">{{.Body}}</p><div class="actions"><form method="post" action="/admin/messages/read"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}"><button class="quiet" type="submit">{{if .IsRead}}Mark unread{{else}}Mark read{{end}}</button></form><form method="post" action="/admin/messages/delete" onsubmit="return confirm('Delete this message?')"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}"><button class="danger" type="submit">Delete</button></form></div></article>{{end}}{{else}}<p class="empty">No messages yet.</p>{{end}}</main></body></html>`))
+var inboxTemplate = template.Must(template.New("inbox").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Messages | England Software</title><link rel="stylesheet" href="/static/admin.css"></head><body><main class="inbox"><header><div><p class="overline">England Software / Admin</p><h1>Messages</h1></div><form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="quiet" type="submit">Sign out</button></form></header>{{if .Messages}}{{range .Messages}}<article class="message {{if not .IsRead}}unread{{end}}"><div class="message-top"><div><span class="status">{{if .IsRead}}Read{{else}}New{{end}}</span><h2>{{.Name}}</h2><a href="mailto:{{.Email}}">{{.Email}}</a></div><time>{{.Created}}</time></div><p class="body">{{.Body}}</p><p class="followup-status">Consulting/application email follow-up: {{if .FollowupOptIn}}Yes, opted in{{else}}No opt-in{{end}}</p><div class="actions"><form method="post" action="/admin/messages/read"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}"><button class="quiet" type="submit">{{if .IsRead}}Mark unread{{else}}Mark read{{end}}</button></form><form method="post" action="/admin/messages/delete" onsubmit="return confirm('Delete this message?')"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}"><button class="danger" type="submit">Delete</button></form></div></article>{{end}}{{else}}<p class="empty">No messages yet.</p>{{end}}</main></body></html>`))
 
 func renderLogin(w http.ResponseWriter, problem string, status int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
