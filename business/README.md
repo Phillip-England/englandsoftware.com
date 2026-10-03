@@ -1,6 +1,6 @@
 # England Software business model
 
-England Software offers three services to small businesses: a standard Business Website, a custom Web Application, and Software Consulting. The website is the simple entry point: **$50/month for the build, hosting, and a working contact form**, with the first payment due on launch day and no long-term contract.
+England Software offers three services to small businesses: a standard Business Website, a custom Web Application, and Software Consulting. The website is the simple entry point: **$50 upfront to get started, covering the first month, then $50/month after the first month** for the build, hosting, and a working contact form, with no long-term contract.
 
 A website gives the client a strong online presence at a low initial cost. The defined scope keeps the offer practical. When a client has a more complex workflow or needs more than a few informational pages, a Web Application receives its own monthly quote that bundles the agreed build, hosting, and ongoing service.
 

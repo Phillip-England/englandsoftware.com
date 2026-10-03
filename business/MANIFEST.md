@@ -14,11 +14,11 @@
 
 | Service | Price | Included | Scope boundary |
 | --- | --- | --- | --- |
-| Business Website | **$50/month**; first payment on launch day; no upfront build fee or long-term contract | Build, hosting, HTTPS, one working contact form with email delivery, routine hosting upkeep, one prelaunch revision round | Up to three informational pages and five content sections total. Client supplies business details, approved copy, logo, and usable photos. Extra pages, writing, branding, ecommerce, integrations, and later content changes are quoted separately. |
+| Business Website | **$50 upfront to get started**, covering the first month; **$50/month after the first month**; no long-term contract | Build, hosting, HTTPS, one working contact form with email delivery, routine hosting upkeep, one prelaunch revision round | Up to three informational pages and five content sections total. Client supplies business details, approved copy, logo, and usable photos. Extra pages, writing, branding, ecommerce, integrations, and later content changes are quoted separately. |
 | Web Application | **Monthly price quoted case by case** | Agreed build, hosting, and ongoing service bundled into one monthly fee | Scope defines features, data, integrations, support, and responsibilities. Examples: blogging systems, analytics hubs, invoicing systems, and sites beyond a few informational pages. |
 | Software Consulting | **Scope and price agreed before an in-depth assessment** | Scheduled review of operations, identification of software opportunities, and a practical recommendation | An application proposal is a possible outcome, not an automatic sale. Visits are arranged when practical. |
 
-**Business Website billing:** The first $50 payment is due when the site goes live, and billing recurs monthly from that date. The client can cancel anytime. Service continues through the paid billing period. There is no separate build or hosting charge within the standard scope. The client's domain is theirs, with registration and renewal charges paid directly to the provider. Business email and provider subscriptions are separate. Clarify site export and transfer terms in each written agreement before work starts.
+**Business Website billing:** A $50 upfront payment is due to get started and covers the first month. After the first month, billing is $50 per month. The client can cancel anytime. Service continues through the paid billing period. There is no separate build or hosting charge within the standard scope. The client's domain is theirs, with registration and renewal charges paid directly to the provider. Business email and provider subscriptions are separate. Clarify site export and transfer terms in each written agreement before work starts.
 
 **Application billing:** Quote one monthly amount for the agreed application build, hosting, and ongoing service. Define the first useful release, delivery stages, launch trigger, included support, changes, cancellation, and data export in the proposal. Do not describe open-ended feature work as included. Do not publish a generic application starting price.
 
@@ -26,7 +26,7 @@
 
 1. Discuss what the business needs. Confirm whether a standard site fits the defined scope.
 2. For a website, agree on pages, sections, supplied content, form destination, revision round, launch criteria, and domain ownership in writing.
-3. Build, review, test form delivery, and launch. Begin $50 monthly billing on launch day.
+3. Collect the $50 upfront payment to begin work. Build, review, test form delivery, and launch. Begin $50 monthly billing after the first month.
 4. Maintain the hosted site. Quote later requests before work begins.
 5. If operations reveal a problem worth solving, offer a separate consulting conversation or assessment. Only contact clients about additional services when they have agreed to that follow-up.
 6. If an application is appropriate, provide a scoped monthly proposal covering build, hosting, and ongoing service.

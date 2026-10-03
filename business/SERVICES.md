@@ -1,10 +1,10 @@
 # Services
 
-The public offers are summarized in [MANIFEST.md](MANIFEST.md) and presented on the [services page](../static/websites.html).
+The public offers are summarized in [MANIFEST.md](MANIFEST.md) and presented on the [home page](../static/index.html).
 
 ## Business Websites
 
-A standard informational business site costs $50 per month. The build, hosting, HTTPS, routine hosting upkeep, and one working contact form that sends submissions to the client's chosen email are included. The defined build covers up to three mobile-friendly pages and five content sections total, with one consolidated revision round before launch. Form delivery is tested before launch.
+A standard informational business site costs $50 upfront to get started, covering the first month, then $50 per month after the first month. The build, hosting, HTTPS, routine hosting upkeep, and one working contact form that sends submissions to the client's chosen email are included. The defined build covers up to three mobile-friendly pages and five content sections total, with one consolidated revision round before launch. Form delivery is tested before launch.
 
 The client supplies business details, approved copy, contact information, brand assets, and photos they may use. We agree on pages, sections, content, and launch criteria before work begins. A client-owned domain is connected to the site; registration and renewal costs are paid directly to the domain provider. Business email and provider subscriptions are separate.
 

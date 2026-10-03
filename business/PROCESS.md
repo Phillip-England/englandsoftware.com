@@ -3,10 +3,10 @@
 ## Business Website
 
 1. Learn what the business does and confirm the standard website scope fits.
-2. Agree in writing on up to three pages and five sections total, supplied content, form destination, one revision round, launch criteria, $50 monthly billing, and cancellation and transfer terms.
-3. Collect the client's approved words, logo, photos, and domain access or connection details.
+2. Agree in writing on up to three pages and five sections total, supplied content, form destination, one revision round, launch criteria, $50 upfront payment, $50 monthly billing after the first month, and cancellation and transfer terms.
+3. Collect the $50 upfront payment and the client's approved words, logo, photos, and domain access or connection details.
 4. Build the site and gather one consolidated round of feedback.
-5. Test the contact form and launch. Start monthly billing on launch day; no upfront build fee.
+5. Test the contact form and launch. Start $50 monthly billing after the first month.
 6. Provide hosting and routine upkeep during the paid service period. Quote new pages, content updates, and other changes before work begins.
 
 ## Web Application

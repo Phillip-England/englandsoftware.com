@@ -97,7 +97,7 @@ func TestPublicOffersMatchBusinessBrief(t *testing.T) {
 		path  string
 		wants []string
 	}{
-		{"/", []string{"$50", "contact form", "launch day", "BUSINESS WEBSITES", "WEB APPLICATIONS", "SOFTWARE CONSULTING", "Invoicing", "id=\"contact\""}},
+		{"/", []string{"$50 upfront to get started", "$50/month after the first month", "Your upfront payment covers the first month", "contact form", "BUSINESS WEBSITES", "WEB APPLICATIONS", "SOFTWARE CONSULTING", "Invoicing", "id=\"contact\""}},
 	}
 	for _, check := range checks {
 		body := request(t, a, http.MethodGet, check.path, nil, nil).Body.String()

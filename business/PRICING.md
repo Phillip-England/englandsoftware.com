@@ -1,10 +1,10 @@
 # Pricing and billing
 
-[MANIFEST.md](MANIFEST.md) is the reference for the public offer. The [services page](../static/websites.html) displays current pricing.
+[MANIFEST.md](MANIFEST.md) is the reference for the public offer. The [Business Websites section](../static/index.html#websites) displays current pricing.
 
 | Service | Public price | Billing rule |
 | --- | --- | --- |
-| Standard Business Website | **$50/month** | No upfront build fee. First payment due on launch day; monthly billing continues from that date. No long-term contract; cancel anytime, with service through the paid period. |
+| Standard Business Website | **$50 upfront**, then **$50/month after the first month** | The upfront payment starts the project and covers the first month. No long-term contract; cancel anytime, with service through the paid period. |
 | Web Application | **Quoted monthly per project** | One agreed monthly fee bundles build, hosting, and ongoing service. Define launch and billing milestones in the proposal. |
 | Software Consulting | **Quoted before an in-depth assessment** | Agree on the visit or assessment scope and fee before it begins. |
 
