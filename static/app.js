@@ -9,11 +9,9 @@ const navLinks = [...document.querySelectorAll(".site-nav a")];
 const sceneMode = window.matchMedia("(min-width: 1051px) and (min-height: 768px) and (prefers-reduced-motion: no-preference)");
 const motionMode = window.matchMedia("(prefers-reduced-motion: no-preference)");
 const heroVideo = document.querySelector(".hero-video");
-const heroVideoPlay = document.querySelector(".hero-video-play");
 const clamp = value => Math.min(1, Math.max(0, value));
 let scheduled = false;
 let heroVideoPlayPending = false;
-let heroVideoBlocked = false;
 
 function heroIsVisible() {
   const rect = heroVideo.getBoundingClientRect();
@@ -29,17 +27,10 @@ function startHeroVideo() {
     heroVideoPlayPending = false;
     return;
   }
-  play.then(() => {
+  play.catch(() => {
+    // Try again when the video becomes playable or the page becomes visible.
+  }).finally(() => {
     heroVideoPlayPending = false;
-    heroVideoBlocked = false;
-    heroVideoPlay.hidden = true;
-  }).catch(error => {
-    heroVideoPlayPending = false;
-    if (error.name === "AbortError" || error.name === "NotSupportedError") return;
-    if (motionMode.matches && !document.hidden && heroIsVisible()) {
-      heroVideoBlocked = true;
-      heroVideoPlay.hidden = false;
-    }
   });
 }
 
@@ -108,10 +99,8 @@ function updatePagePosition() {
   const current = chapters[activeIndex];
   if (heroVideo) {
     if (motionMode.matches && !document.hidden && heroIsVisible()) {
-      if (heroVideoBlocked) heroVideoPlay.hidden = false;
-      else startHeroVideo();
+      startHeroVideo();
     } else {
-      heroVideoPlay.hidden = true;
       if (!heroVideo.paused) heroVideo.pause();
     }
   }
@@ -148,15 +137,6 @@ motionMode.addEventListener("change", scheduleUpdate);
 document.addEventListener("visibilitychange", scheduleUpdate);
 if (heroVideo) {
   heroVideo.addEventListener("canplay", scheduleUpdate);
-  heroVideo.addEventListener("playing", () => {
-    heroVideoBlocked = false;
-    heroVideoPlay.hidden = true;
-  });
-  heroVideoPlay.addEventListener("click", () => {
-    heroVideoBlocked = false;
-    heroVideoPlay.hidden = true;
-    startHeroVideo();
-  });
 }
 
 document.querySelectorAll('a[href^="#"]').forEach(link => {
@@ -203,7 +183,7 @@ window.addEventListener("popstate", () => {
   if (sceneMode.matches) scrollToChapter(Math.max(0, index), "auto");
 });
 
-scheduleUpdate();
+updatePagePosition();
 
 if (new URLSearchParams(window.location.search).get("contact") === "sent") {
   const status = document.querySelector("#contact-status");

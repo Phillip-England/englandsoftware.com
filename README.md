@@ -47,4 +47,4 @@ Docker is supported with `make docker-build` and `make docker-run`. The run targ
 
 # Hero footage
 
-The hero uses a compressed, silent Tulsa skyline clip in `static/new-hero-loop.mp4`. The video element autoplays muted and inline on mobile browsers; JavaScript resumes it when the hero is visible. If a browser blocks automatic playback, a play button lets the visitor start it with a tap. `static/hero-poster.webp` appears while the video loads, if playback is unavailable, and for visitors who prefer reduced motion.
+The hero uses a compressed, silent Tulsa skyline clip in `static/new-hero-loop.mp4`. The video element autoplays muted and inline on mobile browsers; JavaScript starts it when the hero is visible and retries when the video becomes playable or the page becomes visible. `static/hero-poster.webp` appears while the video loads, if playback is unavailable, and for visitors who prefer reduced motion.
