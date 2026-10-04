@@ -47,4 +47,4 @@ Docker is supported with `make docker-build` and `make docker-run`. The run targ
 
 # Hero footage
 
-The hero uses a compressed, silent Tulsa skyline clip that plays forward and then backward. `static/hero-loop.mp4` contains both directions so the browser can loop it smoothly. `static/hero-poster.webp` appears while the video loads and for visitors who prefer reduced motion.
+The hero uses a compressed, silent Tulsa skyline clip in `static/new-hero-loop.mp4`. The video autoplays muted and inline so it can loop on mobile browsers. `static/hero-poster.webp` appears while the video loads, if playback is unavailable, and for visitors who prefer reduced motion.

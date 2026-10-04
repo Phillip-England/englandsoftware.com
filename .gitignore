@@ -11,6 +11,7 @@
 /bin/
 /build/
 /dist/
+/static/*.mov
 *.test
 coverage.out
 coverage.html

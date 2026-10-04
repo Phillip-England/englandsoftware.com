@@ -41,6 +41,28 @@ func request(t *testing.T, a *application, method, path string, form url.Values,
 	a.handler().ServeHTTP(w, r)
 	return w
 }
+
+func TestHeroVideoSupportsRangeRequests(t *testing.T) {
+	mux := http.NewServeMux()
+	publicPages(mux)
+	req := httptest.NewRequest(http.MethodGet, "/static/new-hero-loop.mp4", nil)
+	req.Header.Set("Range", "bytes=0-1")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusPartialContent {
+		t.Fatalf("video range status: %d", w.Code)
+	}
+	if got := w.Header().Get("Content-Type"); got != "video/mp4" {
+		t.Errorf("video content type: %q", got)
+	}
+	if got := w.Header().Get("Content-Range"); !strings.HasPrefix(got, "bytes 0-1/") {
+		t.Errorf("video content range: %q", got)
+	}
+	if got := w.Body.Len(); got != 2 {
+		t.Errorf("video range length: %d", got)
+	}
+}
+
 func TestPagesAndContact(t *testing.T) {
 	a := testApp(t)
 	for _, path := range []string{"/", "/static/styles.css", "/static/admin.css", "/admin/login"} {

@@ -15,7 +15,7 @@ import (
 const portEnv = "ENGLANDSOFTWARE_PORT"
 const defaultPort = "8493"
 
-//go:embed static/*
+//go:embed static/*.css static/*.html static/*.js static/*.png static/*.svg static/*.webp static/new-hero-loop.mp4 static/images/*.webp
 var staticFiles embed.FS
 
 func main() {
