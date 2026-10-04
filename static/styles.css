@@ -290,7 +290,6 @@ html{scroll-padding-top:146px}
 .offer-reel-group mark{display:inline-block;padding:5px 8px;border:2px solid #101820;border-radius:3px;background:var(--accent-strong);color:#101820;font-size:1.13em;letter-spacing:-.055em}
 .offer-reel-price>span{margin-left:3px;font-size:.8em;letter-spacing:-.03em}
 .offer-reel-group i{margin-left:3px;color:var(--accent);font-style:normal;font-size:1.1em;font-weight:500}
-.offer-reel:hover .offer-reel-track,.offer-reel:focus-visible .offer-reel-track{animation-play-state:paused}
 @keyframes offer-reel-scroll{to{transform:translateX(-50%)}}
 @media(prefers-reduced-motion:reduce){.offer-reel-track{animation:none}}
 .contact-form{gap:14px;padding:clamp(25px,2.8vw,40px)}
@@ -357,3 +356,14 @@ html{scroll-padding-top:146px}
   .header-contact .header-phone-number{display:none}
   .header-phone-icon{display:block}
 }
+
+/* Let the skyline keep its color while the lower fade supports the headline. */
+.chapter-hero{background:#101820 url('/static/hero-poster.webp') center/cover no-repeat;color:#fff}
+.chapter-hero::before{content:none}
+.chapter-hero::after{content:"";position:absolute;z-index:1;inset:0;background:linear-gradient(180deg,#07131f14 0%,#07131f45 44%,#07131fb8 100%);pointer-events:none}
+.chapter-hero .hero-centered{z-index:2}
+.hero-centered .hero-logo{filter:brightness(0) invert(1) drop-shadow(0 4px 18px #07131f99)}
+.chapter-hero .hero-centered h1{width:100%;text-shadow:0 3px 24px #07131fc9}
+.chapter-hero .hero-centered h1 em{color:var(--accent)}
+.hero-video{position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.hero-video{display:none}}

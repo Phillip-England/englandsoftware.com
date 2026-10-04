@@ -44,3 +44,7 @@ go build -o englandsoftware .
 ```
 
 Docker is supported with `make docker-build` and `make docker-run`. The run target mounts the local `config` and `data` directories and uses port 8493 by default.
+
+# Hero footage
+
+The hero uses a compressed, silent Tulsa skyline clip that plays forward and then backward. `static/hero-loop.mp4` contains both directions so the browser can loop it smoothly. `static/hero-poster.webp` appears while the video loads and for visitors who prefer reduced motion.

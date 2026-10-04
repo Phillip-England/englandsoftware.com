@@ -8,6 +8,7 @@ const progressHint = progress.lastElementChild;
 const navLinks = [...document.querySelectorAll(".site-nav a")];
 const sceneMode = window.matchMedia("(min-width: 1051px) and (min-height: 768px) and (prefers-reduced-motion: no-preference)");
 const motionMode = window.matchMedia("(prefers-reduced-motion: no-preference)");
+const heroVideo = document.querySelector(".hero-video");
 const clamp = value => Math.min(1, Math.max(0, value));
 let scheduled = false;
 
@@ -74,10 +75,15 @@ function updatePagePosition() {
   }
 
   const current = chapters[activeIndex];
+  if (heroVideo) {
+    if (motionMode.matches && activeIndex === 0 && !document.hidden) {
+      if (heroVideo.paused) heroVideo.play().catch(() => {});
+    } else if (!heroVideo.paused) heroVideo.pause();
+  }
   progressLabel.textContent = `${String(activeIndex + 1).padStart(2, "0")} / ${String(chapters.length).padStart(2, "0")}`;
   progressFill.style.width = `${(pageProgress * 100).toFixed(2)}%`;
   progressHint.hidden = activeIndex === chapters.length - 1;
-  progress.classList.toggle("is-light", current.matches(".chapter-hero, .chapter-consulting, .chapter-contact"));
+  progress.classList.toggle("is-light", current.matches(".chapter-contact"));
   navLinks.forEach(link => {
     if (link.hash === `#${current.id}`) link.setAttribute("aria-current", "location");
     else link.removeAttribute("aria-current");
@@ -104,6 +110,7 @@ window.addEventListener("scroll", scheduleUpdate, { passive: true });
 window.addEventListener("resize", scheduleUpdate);
 sceneMode.addEventListener("change", scheduleUpdate);
 motionMode.addEventListener("change", scheduleUpdate);
+document.addEventListener("visibilitychange", scheduleUpdate);
 
 document.querySelectorAll('a[href^="#"]').forEach(link => {
   const index = chapters.findIndex(chapter => `#${chapter.id}` === link.getAttribute("href"));
