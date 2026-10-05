@@ -8,31 +8,8 @@ const progressHint = progress.lastElementChild;
 const navLinks = [...document.querySelectorAll(".site-nav a")];
 const sceneMode = window.matchMedia("(min-width: 1051px) and (min-height: 768px) and (prefers-reduced-motion: no-preference)");
 const motionMode = window.matchMedia("(prefers-reduced-motion: no-preference)");
-const heroVideo = document.querySelector(".hero-video");
 const clamp = value => Math.min(1, Math.max(0, value));
 let scheduled = false;
-let heroVideoPlayPending = false;
-
-function heroIsVisible() {
-  const rect = heroVideo.getBoundingClientRect();
-  return rect.bottom > 0 && rect.top < window.innerHeight;
-}
-
-function startHeroVideo() {
-  if (heroVideoPlayPending || !heroVideo.paused) return;
-  heroVideoPlayPending = true;
-  heroVideo.muted = true;
-  const play = heroVideo.play();
-  if (!play) {
-    heroVideoPlayPending = false;
-    return;
-  }
-  play.catch(() => {
-    // Try again when the video becomes playable or the page becomes visible.
-  }).finally(() => {
-    heroVideoPlayPending = false;
-  });
-}
 
 // The coffee site's scenes advance in roughly 40vh of scrolling each.
 journey.style.setProperty("--journey-height", `${100 + Math.max(0, chapters.length - 1) * 40}svh`);
@@ -97,13 +74,6 @@ function updatePagePosition() {
   }
 
   const current = chapters[activeIndex];
-  if (heroVideo) {
-    if (motionMode.matches && !document.hidden && heroIsVisible()) {
-      startHeroVideo();
-    } else {
-      if (!heroVideo.paused) heroVideo.pause();
-    }
-  }
   progressLabel.textContent = `${String(activeIndex + 1).padStart(2, "0")} / ${String(chapters.length).padStart(2, "0")}`;
   progressFill.style.width = `${(pageProgress * 100).toFixed(2)}%`;
   progressHint.hidden = activeIndex === chapters.length - 1;
@@ -134,10 +104,6 @@ window.addEventListener("scroll", scheduleUpdate, { passive: true });
 window.addEventListener("resize", scheduleUpdate);
 sceneMode.addEventListener("change", scheduleUpdate);
 motionMode.addEventListener("change", scheduleUpdate);
-document.addEventListener("visibilitychange", scheduleUpdate);
-if (heroVideo) {
-  heroVideo.addEventListener("canplay", scheduleUpdate);
-}
 
 document.querySelectorAll('a[href^="#"]').forEach(link => {
   const index = chapters.findIndex(chapter => `#${chapter.id}` === link.getAttribute("href"));

@@ -361,14 +361,13 @@ html{scroll-padding-top:146px}
   .header-phone-icon{display:block}
 }
 
-/* Let the skyline keep its color while the lower fade supports the headline. */
-.chapter-hero{background:#101820 url('/static/hero-poster.webp') center/cover no-repeat;color:#fff}
+/* The Tulsa skyline stays vivid around a calm, legible center. */
+.chapter-hero{background:#101820 url('/static/images/tulsa-skyline-hero.webp') center 48%/cover no-repeat;color:#fff}
 .chapter-hero::before{content:none}
-.chapter-hero::after{content:"";position:absolute;z-index:1;inset:0;background:linear-gradient(180deg,#07131f14 0%,#07131f45 44%,#07131fb8 100%);pointer-events:none}
+.chapter-hero::after{content:"";position:absolute;z-index:1;inset:0;background:radial-gradient(ellipse 50% 43% at 50% 56%,#07131f75,transparent 100%),linear-gradient(180deg,#07131f25 0%,#07131f24 37%,#07131f82 74%,#07131fc9 100%);pointer-events:none}
 .chapter-hero .hero-centered{z-index:2}
 .hero-centered .hero-logo{filter:brightness(0) invert(1) drop-shadow(0 4px 18px #07131f99)}
 .chapter-hero .hero-centered h1{width:100%;text-shadow:0 3px 24px #07131fc9}
 .chapter-hero .hero-centered h1 em{color:var(--accent);-webkit-text-stroke:3px #000;paint-order:stroke fill}
 @media(max-width:720px){.chapter-hero .hero-centered h1 em{font-size:clamp(34px,9.5vw,44px)}}
-.hero-video{position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
-@media(prefers-reduced-motion:reduce){.hero-video{display:none}}
+@media(max-width:720px){.chapter-hero{background-position:51% center}.chapter-hero::after{background:linear-gradient(180deg,#07131f59 0%,#07131f70 45%,#07131fdb 100%)}}

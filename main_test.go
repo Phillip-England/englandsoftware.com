@@ -42,24 +42,20 @@ func request(t *testing.T, a *application, method, path string, form url.Values,
 	return w
 }
 
-func TestHeroVideoSupportsRangeRequests(t *testing.T) {
+func TestHeroImageIsServed(t *testing.T) {
 	mux := http.NewServeMux()
 	publicPages(mux)
-	req := httptest.NewRequest(http.MethodGet, "/static/new-hero-loop.mp4", nil)
-	req.Header.Set("Range", "bytes=0-1")
+	req := httptest.NewRequest(http.MethodGet, "/static/images/tulsa-skyline-hero.webp", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
-	if w.Code != http.StatusPartialContent {
-		t.Fatalf("video range status: %d", w.Code)
+	if w.Code != http.StatusOK {
+		t.Fatalf("hero image status: %d", w.Code)
 	}
-	if got := w.Header().Get("Content-Type"); got != "video/mp4" {
-		t.Errorf("video content type: %q", got)
+	if got := w.Header().Get("Content-Type"); got != "image/webp" {
+		t.Errorf("hero image content type: %q", got)
 	}
-	if got := w.Header().Get("Content-Range"); !strings.HasPrefix(got, "bytes 0-1/") {
-		t.Errorf("video content range: %q", got)
-	}
-	if got := w.Body.Len(); got != 2 {
-		t.Errorf("video range length: %d", got)
+	if w.Body.Len() == 0 {
+		t.Error("hero image is empty")
 	}
 }
 
