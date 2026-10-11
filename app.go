@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -33,9 +34,11 @@ type appConfig struct {
 	trustedProxies     []netip.Prefix
 }
 type application struct {
-	db       *sql.DB
-	cfg      appConfig
-	dataPath string
+	db         *sql.DB
+	cfg        appConfig
+	dataPath   string
+	articleDir string
+	articleMu  sync.Mutex
 }
 type message struct {
 	ID                                int64
@@ -114,8 +117,6 @@ func newApp(path string, cfg appConfig) (*application, error) {
 		`CREATE TABLE IF NOT EXISTS contact_message_submissions (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, created_at DATETIME NOT NULL)`,
 		`CREATE INDEX IF NOT EXISTS idx_contact_message_submissions_ip_created_at ON contact_message_submissions (ip, created_at)`,
 		`CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TEXT NOT NULL)`,
-		`CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, body_markdown TEXT NOT NULL, image_name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
-		`CREATE INDEX IF NOT EXISTS idx_articles_recent ON articles (created_at DESC, id DESC)`,
 	} {
 		if _, err = db.Exec(stmt); err != nil {
 			db.Close()
@@ -158,7 +159,11 @@ func newApp(path string, cfg appConfig) (*application, error) {
 			return nil, err
 		}
 	}
-	a := &application{db: db, cfg: cfg, dataPath: path}
+	a := &application{db: db, cfg: cfg, dataPath: path, articleDir: "articles"}
+	if err = a.importLegacyArticles(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("import SQLite articles: %w", err)
+	}
 	if err = a.prune(time.Now().UTC()); err != nil {
 		db.Close()
 		return nil, err

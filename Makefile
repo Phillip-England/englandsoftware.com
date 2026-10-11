@@ -16,7 +16,7 @@ docker-build:
 	docker build -t englandsoftware:local .
 
 docker-run: docker-build
-	docker run --rm -p $(APP_PORT):$(APP_PORT) -e ENGLANDSOFTWARE_PORT=$(APP_PORT) -v $(CURDIR)/config:/app/config -v $(CURDIR)/data:/app/data englandsoftware:local
+	docker run --rm -p $(APP_PORT):$(APP_PORT) -e ENGLANDSOFTWARE_PORT=$(APP_PORT) -v $(CURDIR)/config:/app/config -v $(CURDIR)/data:/app/data -v $(CURDIR)/articles:/app/articles englandsoftware:local
 
 clean:
 	rm -f englandsoftware

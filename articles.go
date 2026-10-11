@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"html/template"
@@ -39,34 +38,11 @@ func (a article) Date() string {
 }
 
 func (a *application) imageDir() string {
-	return filepath.Join(filepath.Dir(a.dataPath), "article-images")
+	return filepath.Join(a.articleDir, "images")
 }
 
 func imageURL(name string) string { return "/article-images/" + name }
 func articleURL(id int64) string  { return fmt.Sprintf("/articles/%d", id) }
-
-func (a *application) recentArticles(limit int) ([]article, error) {
-	rows, err := a.db.Query("SELECT id,title,body_markdown,image_name,created_at,updated_at FROM articles ORDER BY created_at DESC,id DESC LIMIT ?", limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []article
-	for rows.Next() {
-		var item article
-		if err := rows.Scan(&item.ID, &item.Title, &item.Body, &item.Image, &item.Created, &item.Updated); err != nil {
-			return nil, err
-		}
-		items = append(items, item)
-	}
-	return items, rows.Err()
-}
-
-func (a *application) getArticle(id int64) (article, error) {
-	var item article
-	err := a.db.QueryRow("SELECT id,title,body_markdown,image_name,created_at,updated_at FROM articles WHERE id=?", id).Scan(&item.ID, &item.Title, &item.Body, &item.Image, &item.Created, &item.Updated)
-	return item, err
-}
 
 var markdown = goldmark.New(goldmark.WithExtensions(extension.GFM))
 
@@ -138,7 +114,7 @@ func (a *application) publicArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	item, err := a.getArticle(id)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, os.ErrNotExist) {
 		http.NotFound(w, r)
 		return
 	}
@@ -163,13 +139,17 @@ func (a *application) articleImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := strings.TrimPrefix(r.URL.Path, "/article-images/")
-	if len(name) != 48 || !strings.HasSuffix(name, ".webp") || !validImageName(name[:43]) {
+	if !validArticleImage(name) {
 		http.NotFound(w, r)
 		return
 	}
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 	http.ServeFile(w, r, filepath.Join(a.imageDir(), name))
+}
+
+func validArticleImage(name string) bool {
+	return len(name) == 48 && strings.HasSuffix(name, ".webp") && validImageName(name[:43])
 }
 
 func validImageName(name string) bool {
@@ -237,7 +217,7 @@ func (a *application) adminArticleAction(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		item, err := a.getArticle(id)
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, os.ErrNotExist) {
 			http.NotFound(w, r)
 			return
 		}
@@ -265,7 +245,7 @@ func (a *application) adminArticleAction(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		item, err := a.getArticle(id)
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, os.ErrNotExist) {
 			http.NotFound(w, r)
 			return
 		}
@@ -273,7 +253,10 @@ func (a *application) adminArticleAction(w http.ResponseWriter, r *http.Request)
 			serverError(w, err)
 			return
 		}
-		if _, err := a.db.Exec("DELETE FROM articles WHERE id=?", id); err != nil {
+		a.articleMu.Lock()
+		err = os.Remove(a.articlePath(id))
+		a.articleMu.Unlock()
+		if err != nil {
 			serverError(w, err)
 			return
 		}
@@ -316,7 +299,7 @@ func (a *application) saveArticle(w http.ResponseWriter, r *http.Request, token 
 	var err error
 	if id != 0 {
 		old, err = a.getArticle(id)
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, os.ErrNotExist) {
 			http.NotFound(w, r)
 			return
 		}
@@ -335,6 +318,9 @@ func (a *application) saveArticle(w http.ResponseWriter, r *http.Request, token 
 		http.Error(w, "Invalid image upload.", http.StatusBadRequest)
 		return
 	}
+	if errors.Is(err, http.ErrMissingFile) {
+		err = nil
+	}
 	if id == 0 && header == nil {
 		a.articleForm(w, item, csrf(token), "Choose an image for the article.", http.StatusBadRequest)
 		return
@@ -350,11 +336,18 @@ func (a *application) saveArticle(w http.ResponseWriter, r *http.Request, token 
 		item.Image = name
 	}
 	now := stamp(time.Now().UTC())
+	a.articleMu.Lock()
 	if id == 0 {
-		_, err = a.db.Exec("INSERT INTO articles(title,body_markdown,image_name,created_at,updated_at) VALUES(?,?,?,?,?)", title, body, item.Image, now, now)
+		item.ID, err = a.nextArticleID()
+		item.Created = now
 	} else {
-		_, err = a.db.Exec("UPDATE articles SET title=?,body_markdown=?,image_name=?,updated_at=? WHERE id=?", title, body, item.Image, now, id)
+		item.Created = old.Created
 	}
+	item.Updated = now
+	if err == nil {
+		err = a.writeArticle(item)
+	}
+	a.articleMu.Unlock()
 	if err != nil {
 		if item.Image != old.Image {
 			_ = os.Remove(filepath.Join(a.imageDir(), item.Image))

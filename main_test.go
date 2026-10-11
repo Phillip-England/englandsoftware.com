@@ -18,6 +18,7 @@ func testApp(t *testing.T) *application {
 	if err != nil {
 		t.Fatal(err)
 	}
+	a.articleDir = filepath.Join(t.TempDir(), "articles")
 	t.Cleanup(func() { a.db.Close() })
 	return a
 }

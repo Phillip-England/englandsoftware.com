@@ -95,6 +95,10 @@ func TestArticlesPublishEditDeleteAndRecentFour(t *testing.T) {
 		t.Fatalf("articles: %+v", items)
 	}
 	imageName := items[0].Image
+	markdownFile, err := os.ReadFile(a.articlePath(items[0].ID))
+	if err != nil || !strings.Contains(string(markdownFile), "title: Article 5") || !strings.Contains(string(markdownFile), "created_at:") || !strings.Contains(string(markdownFile), "## Heading") {
+		t.Fatalf("Markdown article with metadata: %s %v", markdownFile, err)
+	}
 	imageResponse := request(t, a, "GET", imageURL(imageName), nil, nil)
 	if imageResponse.Code != http.StatusOK || imageResponse.Header().Get("Content-Type") != "image/webp" || imageResponse.Body.Len() == 0 {
 		t.Fatalf("image response: %d %q %d", imageResponse.Code, imageResponse.Header().Get("Content-Type"), imageResponse.Body.Len())
@@ -162,12 +166,45 @@ func TestHomeShowsArticlesOnlyWhenTheyExist(t *testing.T) {
 		}
 	}
 	check(false, "01 / 06")
-	if _, err := a.db.Exec("INSERT INTO articles(title,body_markdown,image_name,created_at,updated_at) VALUES(?,?,?,?,?)", "First article", "Body", "image.webp", stamp(time.Now()), stamp(time.Now())); err != nil {
+	if err := a.writeArticle(article{ID: 1, Title: "First article", Body: "Body", Image: strings.Repeat("a", 43) + ".webp", Created: stamp(time.Now()), Updated: stamp(time.Now())}); err != nil {
 		t.Fatal(err)
 	}
 	check(true, "01 / 07")
-	if _, err := a.db.Exec("DELETE FROM articles"); err != nil {
+	if err := os.Remove(a.articlePath(1)); err != nil {
 		t.Fatal(err)
 	}
 	check(false, "01 / 06")
+}
+
+func TestLegacyArticlesExportToMarkdown(t *testing.T) {
+	a := testApp(t)
+	imageName := strings.Repeat("b", 43) + ".webp"
+	oldImageDir := filepath.Join(filepath.Dir(a.dataPath), "article-images")
+	if err := os.MkdirAll(oldImageDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(oldImageDir, imageName), []byte("old image"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.db.Exec("CREATE TABLE articles (id INTEGER PRIMARY KEY, title TEXT, body_markdown TEXT, image_name TEXT, created_at TEXT, updated_at TEXT)"); err != nil {
+		t.Fatal(err)
+	}
+	date := stamp(time.Now().UTC())
+	if _, err := a.db.Exec("INSERT INTO articles VALUES (?,?,?,?,?,?)", 7, "Legacy title", "## Old content", imageName, date, date); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.importLegacyArticles(); err != nil {
+		t.Fatal(err)
+	}
+	item, err := a.getArticle(7)
+	if err != nil || item.Title != "Legacy title" || item.Body != "## Old content" {
+		t.Fatalf("exported article: %+v %v", item, err)
+	}
+	if image, err := os.ReadFile(filepath.Join(a.imageDir(), imageName)); err != nil || string(image) != "old image" {
+		t.Fatalf("exported cover: %s %v", image, err)
+	}
+	var count int
+	if err := a.db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='articles'").Scan(&count); err != nil || count != 0 {
+		t.Fatalf("legacy table still exists: %d %v", count, err)
+	}
 }
