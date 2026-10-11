@@ -542,7 +542,7 @@ html{scroll-padding-top:146px}
 }
 
 /* A direct route to the contact form sits beside the call button. */
-.header-message{display:grid;place-items:center;flex:none;width:45px;height:45px;border:2px solid var(--accent-ink);border-radius:999px;background:#e9efff;color:var(--accent-ink);text-decoration:none;transition:background .2s ease,color .2s ease,transform .2s ease}
+.header-message{display:grid;place-items:center;flex:none;width:45px;height:45px;border:2px solid var(--accent-ink);border-radius:999px;background:var(--accent-strong);color:#fff;text-decoration:none;transition:background .2s ease,color .2s ease,transform .2s ease}
 .header-message svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .header-message:hover{background:var(--accent-ink);color:#fff;transform:translateY(-2px)}
 @media(min-width:951px) and (max-width:1300px){.site-header{gap:16px}.brand{min-width:170px}.site-nav a{padding-inline:10px}}
