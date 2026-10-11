@@ -26,6 +26,10 @@ func articleAdminCookie(t *testing.T, a *application) *http.Cookie {
 	return &http.Cookie{Name: sessionCookie, Value: token}
 }
 func articlePost(t *testing.T, a *application, cookie *http.Cookie, path, title, body string, withImage bool, validCSRF bool) *httptest.ResponseRecorder {
+	return articlePostStatus(t, a, cookie, path, title, body, "", withImage, validCSRF)
+}
+
+func articlePostStatus(t *testing.T, a *application, cookie *http.Cookie, path, title, body, status string, withImage bool, validCSRF bool) *httptest.ResponseRecorder {
 	t.Helper()
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
@@ -36,6 +40,9 @@ func articlePost(t *testing.T, a *application, cookie *http.Cookie, path, title,
 	_ = writer.WriteField("csrf", token)
 	_ = writer.WriteField("title", title)
 	_ = writer.WriteField("body", body)
+	if status != "" {
+		_ = writer.WriteField("status", status)
+	}
 	if withImage {
 		part, err := writer.CreateFormFile("image", "rough.png")
 		if err != nil {
@@ -114,6 +121,14 @@ func TestArticlesPublishEditDeleteAndRecentFour(t *testing.T) {
 	if !strings.Contains(detail, "<h2>Heading</h2>") || !strings.Contains(detail, "<strong>world</strong>") || strings.Contains(detail, "<script>") || strings.Contains(detail, "href=\"javascript:") {
 		t.Fatalf("unsafe or missing markdown: %s", detail)
 	}
+	for _, link := range []string{"/#websites", "/#applications", "/#consulting", "/#about", "/#articles", "/#contact", "tel:+19185008396"} {
+		if !strings.Contains(detail, `href="`+link+`"`) {
+			t.Errorf("article navigation missing %s", link)
+		}
+	}
+	if !strings.Contains(detail, `class="offer-reel" href="/#contact"`) || !strings.Contains(detail, `class="mobile-navigation"`) || !strings.Contains(detail, "← Back to articles") {
+		t.Error("article is missing the reel, mobile menu, or breadcrumb")
+	}
 	edit := articlePost(t, a, cookie, "/admin/articles/5/save", "Revised title", "Updated *content*", false, true)
 	if edit.Code != http.StatusSeeOther {
 		t.Fatalf("edit: %d %s", edit.Code, edit.Body.String())
@@ -174,6 +189,65 @@ func TestHomeShowsArticlesOnlyWhenTheyExist(t *testing.T) {
 		t.Fatal(err)
 	}
 	check(false, "01 / 06")
+}
+
+func TestArticleDraftAndPreview(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg unavailable")
+	}
+	a := testApp(t)
+	cookie := articleAdminCookie(t, a)
+	if got := articlePostStatus(t, a, cookie, "/admin/articles", "Work in progress", "## Draft body", "draft", true, true).Code; got != http.StatusSeeOther {
+		t.Fatalf("save draft: %d", got)
+	}
+	item, err := a.getArticle(1)
+	if err != nil || !item.Draft {
+		t.Fatalf("saved draft: %+v %v", item, err)
+	}
+	if !strings.Contains(string(mustReadArticle(t, a.articlePath(1))), "draft: true") {
+		t.Fatal("draft flag missing from Markdown")
+	}
+	if strings.Contains(request(t, a, "GET", "/", nil, nil).Body.String(), "Work in progress") {
+		t.Fatal("draft appears on home page")
+	}
+	if got := request(t, a, "GET", "/articles/1", nil, nil).Code; got != http.StatusNotFound {
+		t.Fatalf("draft public response: %d", got)
+	}
+	list := request(t, a, "GET", "/admin/articles", nil, cookie).Body.String()
+	if !strings.Contains(list, ">Draft</span>") {
+		t.Fatal("draft status missing from admin list")
+	}
+	preview := articlePost(t, a, cookie, "/admin/articles/preview", "Preview title", "## Preview body", true, true)
+	if preview.Code != http.StatusOK || !strings.Contains(preview.Body.String(), "<h2>Preview body</h2>") || !strings.Contains(preview.Body.String(), `src="data:image/webp;base64,`) || strings.Contains(preview.Body.String(), "ZgotmplZ") {
+		t.Fatalf("preview response: %d %s", preview.Code, preview.Body.String())
+	}
+	if item, err := a.getArticle(1); err != nil || item.Title != "Work in progress" {
+		t.Fatalf("preview changed saved article: %+v %v", item, err)
+	}
+	if got := articlePost(t, a, cookie, "/admin/articles/preview", "Forbidden", "body", false, false).Code; got != http.StatusForbidden {
+		t.Fatalf("preview CSRF: %d", got)
+	}
+	if got := articlePostStatus(t, a, cookie, "/admin/articles/1/save", "Published title", "## Published", "live", false, true).Code; got != http.StatusSeeOther {
+		t.Fatalf("publish: %d", got)
+	}
+	if got := request(t, a, "GET", "/articles/1", nil, nil).Code; got != http.StatusOK {
+		t.Fatalf("published response: %d", got)
+	}
+	if got := articlePostStatus(t, a, cookie, "/admin/articles/1/save", "Unpublished title", "## Hidden", "draft", false, true).Code; got != http.StatusSeeOther {
+		t.Fatalf("unpublish: %d", got)
+	}
+	if got := request(t, a, "GET", "/articles/1", nil, nil).Code; got != http.StatusNotFound {
+		t.Fatalf("unpublished response: %d", got)
+	}
+}
+
+func mustReadArticle(t *testing.T, path string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
 }
 
 func TestLegacyArticlesExportToMarkdown(t *testing.T) {

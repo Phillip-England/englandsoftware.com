@@ -21,6 +21,7 @@ type articleMetadata struct {
 	Image   string `yaml:"image"`
 	Created string `yaml:"created_at"`
 	Updated string `yaml:"updated_at"`
+	Draft   bool   `yaml:"draft,omitempty"`
 }
 
 func (a *application) articlePath(id int64) string {
@@ -67,6 +68,26 @@ func (a *application) recentArticles(limit int) ([]article, error) {
 	return items, nil
 }
 
+func (a *application) publishedArticles(limit int) ([]article, error) {
+	if limit == 0 {
+		return nil, nil
+	}
+	items, err := a.recentArticles(-1)
+	if err != nil {
+		return nil, err
+	}
+	var published []article
+	for _, item := range items {
+		if !item.Draft {
+			published = append(published, item)
+			if limit >= 0 && len(published) == limit {
+				break
+			}
+		}
+	}
+	return published, nil
+}
+
 func (a *application) getArticle(id int64) (article, error) {
 	if id < 1 {
 		return article{}, os.ErrNotExist
@@ -95,14 +116,14 @@ func (a *application) getArticle(id int64) (article, error) {
 		return article{}, fmt.Errorf("article %d: invalid updated_at: %w", id, err)
 	}
 	body := bytes.TrimPrefix(parts[1], []byte("\n"))
-	return article{ID: id, Title: meta.Title, Body: strings.TrimSuffix(string(body), "\n"), Image: meta.Image, Created: meta.Created, Updated: meta.Updated}, nil
+	return article{ID: id, Title: meta.Title, Body: strings.TrimSuffix(string(body), "\n"), Image: meta.Image, Created: meta.Created, Updated: meta.Updated, Draft: meta.Draft}, nil
 }
 
 func (a *application) writeArticle(item article) error {
 	if err := os.MkdirAll(a.articleDir, 0755); err != nil {
 		return err
 	}
-	meta, err := yaml.Marshal(articleMetadata{item.ID, item.Title, item.Image, item.Created, item.Updated})
+	meta, err := yaml.Marshal(articleMetadata{ID: item.ID, Title: item.Title, Image: item.Image, Created: item.Created, Updated: item.Updated, Draft: item.Draft})
 	if err != nil {
 		return err
 	}
