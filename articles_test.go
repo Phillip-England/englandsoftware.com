@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"image"
 	"image/color"
+	_ "image/jpeg"
 	"image/png"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -114,6 +116,10 @@ func TestArticlesPublishEditDeleteAndRecentFour(t *testing.T) {
 	if shareImageResponse.Code != http.StatusOK || shareImageResponse.Header().Get("Content-Type") != "image/jpeg" || shareImageResponse.Body.Len() == 0 {
 		t.Fatalf("share image response: %d %q %d", shareImageResponse.Code, shareImageResponse.Header().Get("Content-Type"), shareImageResponse.Body.Len())
 	}
+	shareImage, _, err := image.DecodeConfig(bytes.NewReader(shareImageResponse.Body.Bytes()))
+	if err != nil || shareImage.Width != 1200 || shareImage.Height != 630 {
+		t.Fatalf("share image dimensions: %+v %v", shareImage, err)
+	}
 	if info, err := os.Stat(filepath.Join(a.imageDir(), imageName)); err != nil || info.Size() > 4<<20 {
 		t.Fatalf("image file: %v %v", info, err)
 	}
@@ -126,14 +132,17 @@ func TestArticlesPublishEditDeleteAndRecentFour(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	shareURL := "https://englandsoftware.com" + imageURL(shareImageName(first.Image)) + "?v=" + url.QueryEscape(first.Updated)
 	for _, tag := range []string{
 		`<link rel="canonical" href="https://englandsoftware.com/articles/1">`,
 		`<meta property="og:type" content="article">`,
 		`<meta property="og:title" content="Article 1">`,
 		`<meta property="og:url" content="https://englandsoftware.com/articles/1">`,
-		`<meta property="og:image" content="https://englandsoftware.com` + imageURL(shareImageName(first.Image)) + `">`,
+		`<meta property="og:image" content="` + shareURL + `">`,
+		`<meta property="og:image:width" content="1200">`,
+		`<meta property="og:image:height" content="630">`,
 		`<meta name="twitter:card" content="summary_large_image">`,
-		`<meta name="twitter:image" content="https://englandsoftware.com` + imageURL(shareImageName(first.Image)) + `">`,
+		`<meta name="twitter:image" content="` + shareURL + `">`,
 	} {
 		if !strings.Contains(detail, tag) {
 			t.Errorf("article sharing tag missing: %s", tag)
