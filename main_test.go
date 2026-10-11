@@ -59,6 +59,28 @@ func TestHeroImageIsServed(t *testing.T) {
 	}
 }
 
+func TestSearchEndpoints(t *testing.T) {
+	mux := http.NewServeMux()
+	publicPages(mux)
+	for path, expected := range map[string][2]string{
+		"/robots.txt":  {"text/plain", "Sitemap: https://englandsoftware.com/sitemap.xml"},
+		"/sitemap.xml": {"application/xml", "https://englandsoftware.com/"},
+	} {
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if w.Code != http.StatusOK || !strings.HasPrefix(w.Header().Get("Content-Type"), expected[0]) || !strings.Contains(w.Body.String(), expected[1]) {
+			t.Errorf("%s: status %d, content type %q, body %q", path, w.Code, w.Header().Get("Content-Type"), w.Body.String())
+		}
+	}
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/", nil))
+	for _, want := range []string{"Tulsa Web Design", "application/ld+json", "og:image", "tulsa-skyline-canvas", "TULSA, OKLAHOMA"} {
+		if !strings.Contains(w.Body.String(), want) {
+			t.Errorf("home page missing %q", want)
+		}
+	}
+}
+
 func TestPagesAndContact(t *testing.T) {
 	a := testApp(t)
 	for _, path := range []string{"/", "/static/styles.css", "/static/admin.css", "/admin/login"} {

@@ -45,6 +45,6 @@ go build -o englandsoftware .
 
 Docker is supported with `make docker-build` and `make docker-run`. The run target mounts the local `config` and `data` directories and uses port 8493 by default.
 
-# Hero image
+# Hero and search metadata
 
-The hero uses an optimized Tulsa skyline image at `static/images/tulsa-skyline-hero.webp` as its background.
+The hero uses a canvas illustration of downtown Tulsa from `static/skyline.js`, with a moon, drifting clouds, glowing windows, moving street lights, and the green roof of Mid-Continent Tower. Reduced-motion visitors get a still scene. The Tulsa photograph at `static/images/tulsa-skyline-hero.webp` remains the social preview image. The homepage carries Tulsa-focused title, description, social preview tags, and structured business data. `/robots.txt` points crawlers to the homepage-only `/sitemap.xml`.

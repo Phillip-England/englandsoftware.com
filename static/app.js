@@ -74,6 +74,11 @@ function updatePagePosition() {
   }
 
   const current = chapters[activeIndex];
+  chapters.forEach((chapter, index) => {
+    const active = index === activeIndex;
+    chapter.classList.toggle("is-active", active);
+    if (active) chapter.classList.add("has-visited");
+  });
   progressLabel.textContent = `${String(activeIndex + 1).padStart(2, "0")} / ${String(chapters.length).padStart(2, "0")}`;
   progressFill.style.width = `${(pageProgress * 100).toFixed(2)}%`;
   progressHint.hidden = activeIndex === chapters.length - 1;

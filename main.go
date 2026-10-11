@@ -15,7 +15,7 @@ import (
 const portEnv = "ENGLANDSOFTWARE_PORT"
 const defaultPort = "8493"
 
-//go:embed static/*.css static/*.html static/*.js static/*.png static/*.svg static/*.webp static/images/*.webp
+//go:embed static/*.css static/*.html static/*.js static/*.png static/*.svg static/*.webp static/*.txt static/*.xml static/images/*.webp
 var staticFiles embed.FS
 
 func main() {
@@ -70,6 +70,15 @@ func main() {
 
 func publicPages(mux *http.ServeMux) {
 	mux.Handle("/static/", http.FileServer(http.FS(staticFiles)))
+	for path, filename := range map[string]string{"/robots.txt": "robots.txt", "/sitemap.xml": "sitemap.xml"} {
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet && r.Method != http.MethodHead {
+				methodNotAllowed(w, "GET, HEAD")
+				return
+			}
+			http.ServeFileFS(w, r, staticFiles, "static/"+filename)
+		})
+	}
 	pages := map[string]string{"/": "index.html"}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/websites" {
