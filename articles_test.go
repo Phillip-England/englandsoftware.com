@@ -110,6 +110,10 @@ func TestArticlesPublishEditDeleteAndRecentFour(t *testing.T) {
 	if imageResponse.Code != http.StatusOK || imageResponse.Header().Get("Content-Type") != "image/webp" || imageResponse.Body.Len() == 0 {
 		t.Fatalf("image response: %d %q %d", imageResponse.Code, imageResponse.Header().Get("Content-Type"), imageResponse.Body.Len())
 	}
+	shareImageResponse := request(t, a, "GET", imageURL(shareImageName(imageName)), nil, nil)
+	if shareImageResponse.Code != http.StatusOK || shareImageResponse.Header().Get("Content-Type") != "image/jpeg" || shareImageResponse.Body.Len() == 0 {
+		t.Fatalf("share image response: %d %q %d", shareImageResponse.Code, shareImageResponse.Header().Get("Content-Type"), shareImageResponse.Body.Len())
+	}
 	if info, err := os.Stat(filepath.Join(a.imageDir(), imageName)); err != nil || info.Size() > 4<<20 {
 		t.Fatalf("image file: %v %v", info, err)
 	}
@@ -118,6 +122,23 @@ func TestArticlesPublishEditDeleteAndRecentFour(t *testing.T) {
 		t.Fatal("home does not show latest four")
 	}
 	detail := request(t, a, "GET", "/articles/1", nil, nil).Body.String()
+	first, err := a.getArticle(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tag := range []string{
+		`<link rel="canonical" href="https://englandsoftware.com/articles/1">`,
+		`<meta property="og:type" content="article">`,
+		`<meta property="og:title" content="Article 1">`,
+		`<meta property="og:url" content="https://englandsoftware.com/articles/1">`,
+		`<meta property="og:image" content="https://englandsoftware.com` + imageURL(shareImageName(first.Image)) + `">`,
+		`<meta name="twitter:card" content="summary_large_image">`,
+		`<meta name="twitter:image" content="https://englandsoftware.com` + imageURL(shareImageName(first.Image)) + `">`,
+	} {
+		if !strings.Contains(detail, tag) {
+			t.Errorf("article sharing tag missing: %s", tag)
+		}
+	}
 	if !strings.Contains(detail, "<h2>Heading</h2>") || !strings.Contains(detail, "<strong>world</strong>") || strings.Contains(detail, "<script>") || strings.Contains(detail, "href=\"javascript:") {
 		t.Fatalf("unsafe or missing markdown: %s", detail)
 	}
@@ -147,6 +168,9 @@ func TestArticlesPublishEditDeleteAndRecentFour(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(a.imageDir(), imageName)); !os.IsNotExist(err) {
 		t.Fatalf("old image remains after replacement: %v", err)
 	}
+	if _, err := os.Stat(filepath.Join(a.imageDir(), shareImageName(imageName))); !os.IsNotExist(err) {
+		t.Fatalf("old share image remains after replacement: %v", err)
+	}
 	imageName = revised.Image
 	deleteForm := strings.NewReader("csrf=" + csrf(cookie.Value))
 	req := httptest.NewRequest(http.MethodPost, "/admin/articles/5/delete", deleteForm)
@@ -159,6 +183,9 @@ func TestArticlesPublishEditDeleteAndRecentFour(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(a.imageDir(), imageName)); !os.IsNotExist(err) {
 		t.Fatalf("deleted image exists: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(a.imageDir(), shareImageName(imageName))); !os.IsNotExist(err) {
+		t.Fatalf("deleted share image exists: %v", err)
 	}
 	if got := request(t, a, "GET", "/articles/5", nil, nil).Code; got != http.StatusNotFound {
 		t.Fatalf("deleted article: %d", got)
@@ -220,6 +247,9 @@ func TestArticleDraftAndPreview(t *testing.T) {
 	preview := articlePost(t, a, cookie, "/admin/articles/preview", "Preview title", "## Preview body", true, true)
 	if preview.Code != http.StatusOK || !strings.Contains(preview.Body.String(), "<h2>Preview body</h2>") || !strings.Contains(preview.Body.String(), `src="data:image/webp;base64,`) || strings.Contains(preview.Body.String(), "ZgotmplZ") {
 		t.Fatalf("preview response: %d %s", preview.Code, preview.Body.String())
+	}
+	if strings.Contains(preview.Body.String(), `property="og:image"`) || strings.Contains(preview.Body.String(), `rel="canonical"`) {
+		t.Fatal("admin preview has public sharing metadata")
 	}
 	if item, err := a.getArticle(1); err != nil || item.Title != "Work in progress" {
 		t.Fatalf("preview changed saved article: %+v %v", item, err)
