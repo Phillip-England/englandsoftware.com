@@ -26,3 +26,6 @@ Thumbs.db
 .vscode/
 *.swp
 *~
+# uppr: never commit local configuration or application data
+/config/
+/data/
