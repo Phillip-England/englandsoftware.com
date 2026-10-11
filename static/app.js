@@ -120,7 +120,7 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
   if (index < 0) return;
   link.addEventListener("click", event => {
     if (mobileMenu?.contains(link)) mobileMenu.open = false;
-    const directOffer = link.matches(".offer-reel, .deal-cta");
+    const directOffer = link.matches(".offer-reel, .deal-cta, .header-message");
     if (!sceneMode.matches && !directOffer) return;
     event.preventDefault();
     history.pushState(null, "", `#${chapters[index].id}`);
