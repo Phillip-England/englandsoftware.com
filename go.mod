@@ -2,7 +2,10 @@ module github.com/phillip-england/englandsoftware
 
 go 1.26.0
 
-require modernc.org/sqlite v1.59.0
+require (
+	github.com/yuin/goldmark v1.7.16
+	modernc.org/sqlite v1.59.0
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect

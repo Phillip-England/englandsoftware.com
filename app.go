@@ -33,8 +33,9 @@ type appConfig struct {
 	trustedProxies     []netip.Prefix
 }
 type application struct {
-	db  *sql.DB
-	cfg appConfig
+	db       *sql.DB
+	cfg      appConfig
+	dataPath string
 }
 type message struct {
 	ID                                int64
@@ -113,6 +114,8 @@ func newApp(path string, cfg appConfig) (*application, error) {
 		`CREATE TABLE IF NOT EXISTS contact_message_submissions (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, created_at DATETIME NOT NULL)`,
 		`CREATE INDEX IF NOT EXISTS idx_contact_message_submissions_ip_created_at ON contact_message_submissions (ip, created_at)`,
 		`CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TEXT NOT NULL)`,
+		`CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, body_markdown TEXT NOT NULL, image_name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+		`CREATE INDEX IF NOT EXISTS idx_articles_recent ON articles (created_at DESC, id DESC)`,
 	} {
 		if _, err = db.Exec(stmt); err != nil {
 			db.Close()
@@ -155,7 +158,7 @@ func newApp(path string, cfg appConfig) (*application, error) {
 			return nil, err
 		}
 	}
-	a := &application{db: db, cfg: cfg}
+	a := &application{db: db, cfg: cfg, dataPath: path}
 	if err = a.prune(time.Now().UTC()); err != nil {
 		db.Close()
 		return nil, err
@@ -166,6 +169,11 @@ func newApp(path string, cfg appConfig) (*application, error) {
 func (a *application) handler() http.Handler {
 	mux := http.NewServeMux()
 	publicPages(mux)
+	mux.HandleFunc("GET /{$}", a.home)
+	mux.HandleFunc("/articles/", a.publicArticle)
+	mux.HandleFunc("/article-images/", a.articleImage)
+	mux.HandleFunc("/admin/articles", a.adminArticles)
+	mux.HandleFunc("/admin/articles/", a.adminArticleAction)
 	mux.HandleFunc("/contact", a.contact)
 	mux.HandleFunc("/admin/login", a.login)
 	mux.HandleFunc("/admin/logout", a.logout)
@@ -549,7 +557,7 @@ func (a *application) deleteMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 var loginTemplate = template.Must(template.New("login").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Admin sign in | England Software</title><link rel="stylesheet" href="/static/admin.css"></head><body><main class="login-panel"><img src="/static/logo.svg" alt="" width="64" height="74"><h1>Admin sign in</h1>{{if .}}<p class="error" role="alert">{{.}}</p>{{end}}<form method="post" action="/admin/login"><label>Username<input name="username" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><div class="trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div><button type="submit">Sign in</button></form></main></body></html>`))
-var inboxTemplate = template.Must(template.New("inbox").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Messages | England Software</title><link rel="stylesheet" href="/static/admin.css"></head><body><main class="inbox"><header><div><p class="overline">England Software / Admin</p><h1>Messages</h1></div><form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="quiet" type="submit">Sign out</button></form></header>{{if .Messages}}{{range .Messages}}<article class="message {{if not .IsRead}}unread{{end}}"><div class="message-top"><div><span class="status">{{if .IsRead}}Read{{else}}New{{end}}</span><h2>{{.Name}}</h2><a href="mailto:{{.Email}}">{{.Email}}</a></div><time>{{.Created}}</time></div><p class="body">{{.Body}}</p><p class="followup-status">Consulting/application email follow-up: {{if .FollowupOptIn}}Yes, opted in{{else}}No opt-in{{end}}</p><div class="actions"><form method="post" action="/admin/messages/read"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}"><button class="quiet" type="submit">{{if .IsRead}}Mark unread{{else}}Mark read{{end}}</button></form><form method="post" action="/admin/messages/delete" onsubmit="return confirm('Delete this message?')"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}"><button class="danger" type="submit">Delete</button></form></div></article>{{end}}{{else}}<p class="empty">No messages yet.</p>{{end}}</main></body></html>`))
+var inboxTemplate = template.Must(template.New("inbox").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Messages | England Software</title><link rel="stylesheet" href="/static/admin.css"></head><body><main class="inbox"><header><div><p class="overline">England Software / Admin</p><h1>Messages</h1></div><div class="admin-header-actions"><a class="admin-link" href="/admin/articles">Articles</a><form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="quiet" type="submit">Sign out</button></form></div></header>{{if .Messages}}{{range .Messages}}<article class="message {{if not .IsRead}}unread{{end}}"><div class="message-top"><div><span class="status">{{if .IsRead}}Read{{else}}New{{end}}</span><h2>{{.Name}}</h2><a href="mailto:{{.Email}}">{{.Email}}</a></div><time>{{.Created}}</time></div><p class="body">{{.Body}}</p><p class="followup-status">Consulting/application email follow-up: {{if .FollowupOptIn}}Yes, opted in{{else}}No opt-in{{end}}</p><div class="actions"><form method="post" action="/admin/messages/read"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}"><button class="quiet" type="submit">{{if .IsRead}}Mark unread{{else}}Mark read{{end}}</button></form><form method="post" action="/admin/messages/delete" onsubmit="return confirm('Delete this message?')"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}"><button class="danger" type="submit">Delete</button></form></div></article>{{end}}{{else}}<p class="empty">No messages yet.</p>{{end}}</main></body></html>`))
 
 func renderLogin(w http.ResponseWriter, problem string, status int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

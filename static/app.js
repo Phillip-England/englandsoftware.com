@@ -5,7 +5,8 @@ const progress = document.querySelector(".chapter-progress");
 const progressLabel = document.querySelector(".progress-label");
 const progressFill = document.querySelector(".progress-fill");
 const progressHint = progress.lastElementChild;
-const navLinks = [...document.querySelectorAll(".site-nav a")];
+const navLinks = [...document.querySelectorAll(".site-nav a, .mobile-navigation nav a")];
+const mobileMenu = document.querySelector(".mobile-navigation");
 const sceneMode = window.matchMedia("(min-width: 1051px) and (min-height: 768px) and (prefers-reduced-motion: no-preference)");
 const motionMode = window.matchMedia("(prefers-reduced-motion: no-preference)");
 const clamp = value => Math.min(1, Math.max(0, value));
@@ -55,7 +56,11 @@ function updatePagePosition() {
       chapter.style.removeProperty("pointer-events");
       foregrounds[index].forEach(element => { element.style.removeProperty("opacity"); });
       const inner = chapter.querySelector(".chapter-inner");
-      if (motionMode.matches) {
+      if (index === 0) {
+        // The opening hero must be fully visible on the first mobile paint.
+        inner.style.opacity = "1";
+        inner.style.transform = "none";
+      } else if (motionMode.matches) {
         const fadeDistance = Math.min(240, window.innerHeight * 0.3);
         const fixedBottom = document.querySelector(".offer-reel").getBoundingClientRect().bottom;
         const entering = clamp((window.innerHeight - rect.top) / fadeDistance);
@@ -114,6 +119,7 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
   const index = chapters.findIndex(chapter => `#${chapter.id}` === link.getAttribute("href"));
   if (index < 0) return;
   link.addEventListener("click", event => {
+    if (mobileMenu?.contains(link)) mobileMenu.open = false;
     const directOffer = link.matches(".offer-reel, .deal-cta");
     if (!sceneMode.matches && !directOffer) return;
     event.preventDefault();
@@ -147,6 +153,16 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
       scrollToChapter(index);
     }
   });
+});
+
+mobileMenu?.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    mobileMenu.open = false;
+    mobileMenu.querySelector("summary").focus();
+  }
+});
+document.addEventListener("click", event => {
+  if (mobileMenu?.open && !mobileMenu.contains(event.target)) mobileMenu.open = false;
 });
 
 window.addEventListener("popstate", () => {
