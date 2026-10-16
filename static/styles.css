@@ -254,8 +254,9 @@
 .site-nav{gap:3px;margin:auto;padding:4px;border:1px solid #cad8f5;border-radius:999px;background:#e9efff}
 .site-nav a{padding:10px 16px;border-radius:999px;color:#43535b;transition:background .2s ease,color .2s ease}
 .site-nav a:hover,.site-nav a[aria-current="location"]{background:var(--accent-ink);color:#fff}
-.header-contact{display:inline-flex;align-items:center;gap:12px;padding:13px 19px;border:2px solid var(--accent-ink);border-radius:999px;background:var(--accent-strong);color:#fff;transition:background .2s ease,transform .2s ease}
-.header-contact:hover{background:var(--accent-ink);color:#fff;transform:translateY(-2px)}
+.header-contact{display:inline-flex;align-items:center;gap:12px;padding:13px 19px;border:2px solid var(--accent-ink);border-radius:999px;background:#fff;color:var(--accent-ink);transition:transform .2s ease}
+.header-contact:hover{background:#fff;color:var(--accent-ink);transform:translateY(-2px)}
+.header-contact:active{background:var(--accent-strong);color:#fff;transform:translateY(0)}
 .header-contact .header-phone-number{margin:0;font-size:12px;line-height:1;letter-spacing:.04em}
 .header-phone-icon{display:none;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .chapter-hero{background:radial-gradient(circle at 50% 36%,#ffffff 0,#f5f4f0 58%,#e9edf6 100%);text-align:center}
@@ -479,6 +480,21 @@ html{scroll-padding-top:146px}
   .hero-centered > .hero-summary{margin-top:11px;font-size:12px}
 }
 
+.hero-time-toggle{position:absolute;z-index:3;left:var(--edge);bottom:27px;display:inline-flex;align-items:center;gap:10px;min-height:42px;border:1px solid #d5e8ff9c;border-radius:999px;background:#102a45c9;padding:8px 15px;color:#fff;font:600 10px var(--mono);letter-spacing:.12em;cursor:pointer;backdrop-filter:blur(8px);transition:background .2s ease,transform .2s ease}
+.hero-time-toggle:hover{background:#1d4780;transform:translateY(-2px)}
+.hero-time-toggle:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.hero-time-icon{font:22px/1 Arial,sans-serif}
+.chapter-hero.is-daytime{background:#a8d8f2;color:#152d40}
+.chapter-hero.is-daytime::after{background:linear-gradient(180deg,#e4f2fa28 0%,#f5f8f258 43%,#edf5f178 67%,#173d5066 100%)}
+.chapter-hero.is-daytime .hero-centered .hero-logo{filter:drop-shadow(0 8px 22px #ffffff9c)}
+.chapter-hero.is-daytime .hero-centered .hero-brand h1{color:#102c3c;text-shadow:0 2px 18px #ffffffd9}
+.chapter-hero.is-daytime .hero-centered > .hero-summary{color:#19394b;text-shadow:0 1px 12px #ffffff,0 1px 3px #ffffff}
+.chapter-hero.is-daytime .hero-city-caption,.chapter-hero.is-daytime .hero-city-caption span+span{color:#fff;text-shadow:0 1px 8px #183b50,0 1px 3px #183b50}
+.chapter-hero.is-daytime .hero-time-toggle{border-color:#31566a8c;background:#f4f9f3dc;color:#17394b}
+.chapter-hero.is-daytime .hero-time-toggle:hover{background:#fff}
+.chapter-hero.is-daytime .hero-time-toggle:focus-visible{outline-color:#17394b}
+@media(max-width:720px){.hero-time-toggle{left:auto;right:var(--edge);bottom:17px;min-height:38px;padding:6px 11px;font-size:9px}.hero-time-icon{font-size:19px}.chapter-hero.is-daytime::after{background:linear-gradient(180deg,#edf7fa4d 0%,#f8faf19c 40%,#eff4ed7d 70%,#173d506e 100%)}}
+
 /* Blend Phillip into the About background without a visible photo edge. */
 .chapter-about{
   background-color:#142849;
@@ -543,9 +559,10 @@ html{scroll-padding-top:146px}
 }
 
 /* A direct route to the contact form sits beside the call button. */
-.header-message{display:grid;place-items:center;flex:none;width:45px;height:45px;border:2px solid var(--accent-ink);border-radius:999px;background:var(--accent-strong);color:#fff;text-decoration:none;transition:background .2s ease,color .2s ease,transform .2s ease}
+.header-message{display:grid;place-items:center;flex:none;width:45px;height:45px;border:2px solid var(--accent-ink);border-radius:999px;background:#fff;color:var(--accent-ink);text-decoration:none;transition:transform .2s ease}
 .header-message svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.header-message:hover{background:var(--accent-ink);color:#fff;transform:translateY(-2px)}
+.header-message:hover{background:#fff;color:var(--accent-ink);transform:translateY(-2px)}
+.header-message:active{background:var(--accent-strong);color:#fff;transform:translateY(0)}
 @media(min-width:951px) and (max-width:1300px){.site-header{gap:16px}.brand{min-width:170px}.site-nav a{padding-inline:10px}}
 @media(max-width:950px){.header-message{width:40px;height:40px}}
 @media(max-width:720px){

@@ -1,6 +1,7 @@
 (() => {
   const canvas = document.querySelector(".tulsa-skyline-canvas");
   const hero = document.querySelector(".chapter-hero");
+  const toggle = document.querySelector(".hero-time-toggle");
   if (!canvas || !hero) return;
   const context = canvas.getContext("2d", { alpha: false });
   if (!context) return;
@@ -37,6 +38,12 @@
     return points;
   });
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const localDaytime = () => {
+    const hour = new Date().getHours();
+    return hour >= 7 && hour < 19;
+  };
+  let manualMode = false;
+  let daytime = localDaytime();
   let width = 0;
   let height = 0;
   let cityScale = 1;
@@ -46,6 +53,18 @@
   let lastFrame = 0;
   let elapsed = 0;
   const shouldAnimate = () => !document.hidden && !motion.matches;
+
+  function setMode(day) {
+    daytime = day;
+    hero.classList.toggle("is-daytime", daytime);
+    if (toggle) {
+      const nextView = daytime ? "nighttime" : "daytime";
+      toggle.setAttribute("aria-label", `Switch to ${nextView} view`);
+      toggle.querySelector(".hero-time-label").textContent = daytime ? "NIGHT VIEW" : "DAY VIEW";
+      toggle.querySelector(".hero-time-icon").textContent = daytime ? "☾" : "☀";
+    }
+    if (width && height) draw(elapsed);
+  }
 
   function resize() {
     const rect = hero.getBoundingClientRect();
@@ -64,20 +83,20 @@
 
   function drawSky(seconds) {
     const sky = context.createLinearGradient(0, 0, 0, height);
-    sky.addColorStop(0, "#07142d");
-    sky.addColorStop(.52, "#17345d");
-    sky.addColorStop(1, "#335478");
+    sky.addColorStop(0, daytime ? "#5aa8df" : "#07142d");
+    sky.addColorStop(.52, daytime ? "#a8d8f2" : "#17345d");
+    sky.addColorStop(1, daytime ? "#e5eef0" : "#335478");
     context.fillStyle = sky;
     context.fillRect(0, 0, width, height);
 
     const glow = context.createRadialGradient(width * .48, height * .8, 0, width * .48, height * .8, width * .65);
-    glow.addColorStop(0, "#96b4d12c");
-    glow.addColorStop(1, "#96b4d100");
+    glow.addColorStop(0, daytime ? "#fff6d980" : "#96b4d12c");
+    glow.addColorStop(1, daytime ? "#fff6d900" : "#96b4d100");
     context.fillStyle = glow;
     context.fillRect(0, 0, width, height);
 
     // Sparse stars brighten and dim without drawing attention from the city.
-    for (let star = 0; star < 42; star++) {
+    for (let star = 0; !daytime && star < 42; star++) {
       const x = hash(star, 40) * width;
       const y = hash(star, 41) * height * .62;
       context.globalAlpha = motion.matches ? .36 : .25 + .17 * Math.sin(seconds * .6 + star);
@@ -91,21 +110,21 @@
     const moonY = height * .28;
     const moonRadius = Math.max(22, Math.min(width * .042, height * .052, 47));
     const halo = context.createRadialGradient(moonX, moonY, moonRadius * .45, moonX, moonY, moonRadius * 3.2);
-    halo.addColorStop(0, "#dcecff8a");
-    halo.addColorStop(.35, "#b7d7ff4d");
-    halo.addColorStop(1, "#b7d7ff00");
+    halo.addColorStop(0, daytime ? "#fff9ddc9" : "#dcecff8a");
+    halo.addColorStop(.35, daytime ? "#fff3be70" : "#b7d7ff4d");
+    halo.addColorStop(1, daytime ? "#fff3be00" : "#b7d7ff00");
     context.fillStyle = halo;
     context.fillRect(moonX - moonRadius * 3.2, moonY - moonRadius * 3.2, moonRadius * 6.4, moonRadius * 6.4);
     const moon = context.createRadialGradient(moonX - moonRadius * .2, moonY - moonRadius * .2, 0, moonX, moonY, moonRadius);
-    moon.addColorStop(0, "#f9fcff");
-    moon.addColorStop(.78, "#e8f2fb");
-    moon.addColorStop(1, "#cbddeb");
+    moon.addColorStop(0, daytime ? "#fffef4" : "#f9fcff");
+    moon.addColorStop(.78, daytime ? "#fff5cb" : "#e8f2fb");
+    moon.addColorStop(1, daytime ? "#ffe6a0" : "#cbddeb");
     context.beginPath();
     context.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
     context.fillStyle = moon;
     context.fill();
     context.fillStyle = "#9db8c72b";
-    for (const [dx, dy, radius] of [[-.3, -.22, .13], [.3, .08, .18], [-.08, .32, .11]]) {
+    for (const [dx, dy, radius] of daytime ? [] : [[-.3, -.22, .13], [.3, .08, .18], [-.08, .32, .11]]) {
       context.beginPath();
       context.arc(moonX + dx * moonRadius, moonY + dy * moonRadius, radius * moonRadius, 0, Math.PI * 2);
       context.fill();
@@ -118,9 +137,9 @@
       const y = height * (.14 + hash(index, 5) * .48);
       const rise = Math.max(16, span * .075);
       context.save();
-      context.globalAlpha = .18 + hash(index, 6) * .1;
-      context.fillStyle = "#b7cbe1";
-      context.shadowColor = "#c5d9ed";
+      context.globalAlpha = (daytime ? .52 : .18) + hash(index, 6) * .1;
+      context.fillStyle = daytime ? "#ffffff" : "#b7cbe1";
+      context.shadowColor = daytime ? "#ffffff" : "#c5d9ed";
       context.shadowBlur = 16;
       context.beginPath();
       context.moveTo(x, y + rise * .35);
@@ -280,7 +299,7 @@
       context.stroke();
       for (let x = 573; x < 629; x += 18) {
         if (hash(x, y) > .68) {
-          context.globalAlpha = .55 + .18 * Math.sin(seconds * .4 + x);
+          context.globalAlpha = daytime ? .12 : .55 + .18 * Math.sin(seconds * .4 + x);
           context.fillStyle = "#f5d7a8";
           context.fillRect(x, y + 2, 4, 3);
         }
@@ -490,7 +509,7 @@
 
   function drawCity(seconds) {
     // Low outer blocks keep the panorama grounded when the screen is very wide.
-    context.fillStyle = "#263e5a";
+    context.fillStyle = daytime ? "#8da9af" : "#263e5a";
     for (let x = 0; x < width; x += 31) {
       context.fillRect(x, height - 62 - hash(x, 14) * 45, 33, 108);
     }
@@ -499,9 +518,9 @@
     context.scale(cityScale, cityScale);
 
     // The distant tree line and low roofs sit behind the tower cluster.
-    context.fillStyle = "#25464e";
+    context.fillStyle = daytime ? "#668879" : "#25464e";
     context.fillRect(-30, 391, 1060, 24);
-    context.fillStyle = "#344d68";
+    context.fillStyle = daytime ? "#879fa2" : "#344d68";
     for (let x = -30; x < 1030; x += 23) {
       context.fillRect(x, 392 + hash(x, 7) * 37, 25, 65);
     }
@@ -625,12 +644,12 @@
         context.fillStyle = "#d3dfe188";
         context.fillRect(x + 3, y + 7, w - 6, 4);
       }
-      context.fillStyle = "#071b3870";
+      context.fillStyle = daytime ? "#28455516" : "#071b3870";
       context.fillRect(x, y, w, h);
-      // Lit windows vary gently while each facade keeps its own grid.
+      // Windows reflect the sky by day and glow from within at night.
       for (const light of windows[index]) {
-        context.globalAlpha = motion.matches ? .68 : .55 + .27 * Math.sin(seconds * .65 + light.phase);
-        context.fillStyle = light.color;
+        context.globalAlpha = daytime ? .32 : motion.matches ? .68 : .55 + .27 * Math.sin(seconds * .65 + light.phase);
+        context.fillStyle = daytime ? "#e7f3f5" : light.color;
         context.fillRect(light.x, light.y, light.width, 3);
       }
       context.globalAlpha = 1;
@@ -638,9 +657,9 @@
 
     // Parking decks and older low blocks overlap the tower bases.
     for (const [x, y, w, h, color] of [
-      [0, 420, 224, 38, "#52637a"],
-      [182, 428, 145, 30, "#61718a"],
-      [429, 419, 177, 39, "#526581"]
+      [0, 420, 224, 38, daytime ? "#8ba2a8" : "#52637a"],
+      [182, 428, 145, 30, daytime ? "#9bacaf" : "#61718a"],
+      [429, 419, 177, 39, daytime ? "#879fa8" : "#526581"]
     ]) {
       context.fillStyle = color;
       context.fillRect(x, y, w, h);
@@ -654,14 +673,14 @@
     }
 
     // Small street traffic stays close to the base of the composition.
-    context.fillStyle = "#172d49";
+    context.fillStyle = daytime ? "#687f86" : "#172d49";
     context.fillRect(0, 446, 1000, 54);
     context.fillStyle = "#b4bacc4a";
     context.fillRect(0, 452, 1000, 2);
     for (let car = 0; car < 8; car++) {
       const x = ((car * 157 + seconds * (car % 2 ? 16 : -13)) % 1130 + 1130) % 1130 - 65;
       const y = 462 + hash(car, 18) * 21;
-      const color = car % 2 ? "#ffd1a1" : "#ff7e82";
+      const color = daytime ? (car % 2 ? "#f4eee2" : "#b75042") : (car % 2 ? "#ffd1a1" : "#ff7e82");
       context.fillStyle = color;
       context.shadowColor = color;
       context.shadowBlur = 9;
@@ -670,7 +689,7 @@
     context.shadowBlur = 0;
 
     // Tree crowns and low roofs define the bottom edge.
-    context.fillStyle = "#102d34";
+    context.fillStyle = daytime ? "#365f52" : "#102d34";
     for (let x = -20; x < 1040; x += 28) {
       const crown = 468 + hash(x, 21) * 18;
       context.beginPath();
@@ -704,9 +723,18 @@
     if (shouldAnimate()) frame = requestAnimationFrame(animate);
   }
 
+  toggle?.addEventListener("click", () => {
+    manualMode = true;
+    setMode(!daytime);
+  });
+  // Follow the visitor's clock while the page remains open, unless they choose a view.
+  setInterval(() => {
+    if (!manualMode && localDaytime() !== daytime) setMode(localDaytime());
+  }, 60_000);
   new ResizeObserver(resize).observe(hero);
   document.addEventListener("visibilitychange", updateMotion);
   motion.addEventListener("change", updateMotion);
+  setMode(daytime);
   resize();
   updateMotion();
 })();
