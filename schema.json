@@ -29,6 +29,24 @@
       "description": "Comma-separated CIDR ranges of trusted reverse proxies whose forwarded client IP headers may be used.",
       "example": "127.0.0.1/32",
       "required": false
+    },
+    {
+      "name": "EGATE_HOST",
+      "description": "Base URL of the egate email gateway. Defaults to https://englandsoftware.com.",
+      "example": "https://englandsoftware.com",
+      "required": false
+    },
+    {
+      "name": "EGATE_API_KEY",
+      "description": "Registered egate app key used to send contact emails. Store the real key as a server-side secret; do not commit it to this file.",
+      "example": "eg_<registered-app-key>",
+      "required": true
+    },
+    {
+      "name": "CONTACT_EMAIL_TO",
+      "description": "Single inbox address that receives contact form emails.",
+      "example": "contact@example.com",
+      "required": true
     }
   ]
 }
