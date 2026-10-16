@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 :root { color-scheme:light; font-family:Manrope,Arial,sans-serif; }
+html { touch-action:manipulation; }
 * { box-sizing:border-box; }
 body { background:#f7f7f5; color:#111; margin:0; min-height:100vh; }
 h1,h2 { font-family:'Space Grotesk',sans-serif; letter-spacing:-.055em; }
