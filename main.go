@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/netip"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -20,6 +24,10 @@ var staticFiles embed.FS
 
 func main() {
 	if err := loadEnvFile("config/.env"); err != nil {
+		log.Fatal(err)
+	}
+	emailConfig, err := emailSettingsFromEnv()
+	if err != nil {
 		log.Fatal(err)
 	}
 	port := os.Getenv(portEnv)
@@ -52,6 +60,15 @@ func main() {
 		log.Fatal(err)
 	}
 	defer app.db.Close()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if len(os.Args) > 1 && os.Args[1] == "email-worker" {
+		if err := app.runEmailWorker(ctx, emailConfig); err != nil && !errors.Is(err, context.Canceled) {
+			log.Fatal(err)
+		}
+		return
+	}
+	go app.superviseEmailWorker(ctx)
 	go func() {
 		ticker := time.NewTicker(time.Hour)
 		defer ticker.Stop()
@@ -63,7 +80,16 @@ func main() {
 	}()
 	addr := ":" + port
 	log.Printf("England Software listening at http://localhost:%s", port)
-	if err := http.ListenAndServe(addr, app.handler()); err != nil {
+	server := &http.Server{Addr: addr, Handler: app.handler(), ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("HTTP shutdown: %v", err)
+		}
+	}()
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/mail"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -21,12 +22,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite"
 )
 
 const sessionCookie = "englandsoftware_admin"
 const timeFormat = time.RFC3339Nano
+
+var contactHoneypots = [...]string{"website", "company_url", "fax_number", "middle_name", "address_line_2", "preferred_contact_time", "project_url", "referral_code"}
 
 type appConfig struct {
 	username, password string
@@ -39,6 +43,7 @@ type application struct {
 	dataPath   string
 	articleDir string
 	articleMu  sync.Mutex
+	emailWake  chan struct{}
 }
 type message struct {
 	ID                                int64
@@ -116,6 +121,8 @@ func newApp(path string, cfg appConfig) (*application, error) {
 		`CREATE TABLE IF NOT EXISTS banned_ips (ip TEXT PRIMARY KEY, banned_until DATETIME NOT NULL, created_at DATETIME NOT NULL)`,
 		`CREATE TABLE IF NOT EXISTS contact_message_submissions (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, created_at DATETIME NOT NULL)`,
 		`CREATE INDEX IF NOT EXISTS idx_contact_message_submissions_ip_created_at ON contact_message_submissions (ip, created_at)`,
+		`CREATE TABLE IF NOT EXISTS contact_email_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, followup_opt_in INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TEXT NOT NULL, last_error TEXT NOT NULL DEFAULT '')`,
+		`CREATE INDEX IF NOT EXISTS idx_contact_email_jobs_due ON contact_email_jobs (status, next_attempt_at, id)`,
 		`CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TEXT NOT NULL)`,
 	} {
 		if _, err = db.Exec(stmt); err != nil {
@@ -159,7 +166,7 @@ func newApp(path string, cfg appConfig) (*application, error) {
 			return nil, err
 		}
 	}
-	a := &application{db: db, cfg: cfg, dataPath: path, articleDir: "articles"}
+	a := &application{db: db, cfg: cfg, dataPath: path, articleDir: "articles", emailWake: make(chan struct{}, 1)}
 	if err = a.importLegacyArticles(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("import SQLite articles: %w", err)
@@ -236,7 +243,7 @@ func (a *application) prune(now time.Time) error {
 	}{
 		{"DELETE FROM login_failures WHERE created_at < ?", stamp(now.Add(-24 * time.Hour))},
 		{"DELETE FROM banned_ips WHERE banned_until <= ?", stamp(now)},
-		{"DELETE FROM contact_message_submissions WHERE created_at < ?", stamp(now.Add(-24 * time.Hour))},
+		{"DELETE FROM contact_message_submissions WHERE created_at <= ?", stamp(now.Add(-24 * time.Hour))},
 		{"DELETE FROM admin_sessions WHERE expires_at <= ?", stamp(now)},
 	} {
 		if _, err := a.db.Exec(q.sql, q.arg); err != nil {
@@ -310,16 +317,21 @@ func (a *application) contact(w http.ResponseWriter, r *http.Request) {
 	if !parseForm(w, r, 16<<10) {
 		return
 	}
-	if r.PostForm.Get("website") != "" {
-		http.Redirect(w, r, "/?contact=sent#contact", http.StatusSeeOther)
-		return
+	for _, field := range contactHoneypots {
+		for _, value := range r.PostForm[field] {
+			if value != "" {
+				http.Redirect(w, r, "/?contact=sent#contact", http.StatusSeeOther)
+				return
+			}
+		}
 	}
 	name := strings.TrimSpace(r.PostForm.Get("name"))
 	email := strings.TrimSpace(r.PostForm.Get("email"))
 	body := strings.TrimSpace(r.PostForm.Get("message"))
 	followupOptIn := r.PostForm.Get("followup_opt_in") == "yes"
-	if name == "" || email == "" || body == "" || len(name) > 200 || len(email) > 320 || len(body) > 10000 || !strings.Contains(email, "@") {
-		http.Error(w, "Please complete the name, email, and message fields.", http.StatusBadRequest)
+	parsedEmail, emailErr := mail.ParseAddress(email)
+	if name == "" || email == "" || body == "" || utf8.RuneCountInString(name) > 120 || len(name) > 480 || len(email) > 254 || utf8.RuneCountInString(body) > 3000 || len(body) > 12000 || emailErr != nil || parsedEmail.Address != email || strings.ContainsAny(name, "\r\n") {
+		http.Error(w, "Please enter a name, valid email, and message of up to 3,000 characters.", http.StatusBadRequest)
 		return
 	}
 	now := time.Now().UTC()
@@ -330,17 +342,21 @@ func (a *application) contact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback()
-	if _, err = tx.Exec("DELETE FROM contact_message_submissions WHERE created_at < ?", stamp(now.Add(-24*time.Hour))); err != nil {
+	if _, err = tx.Exec("DELETE FROM contact_message_submissions WHERE created_at <= ?", stamp(now.Add(-24*time.Hour))); err != nil {
 		serverError(w, err)
 		return
 	}
 	var count int
-	if err = tx.QueryRow("SELECT COUNT(*) FROM contact_message_submissions WHERE ip=? AND created_at >= ?", ip, stamp(now.Add(-24*time.Hour))).Scan(&count); err != nil {
+	if err = tx.QueryRow("SELECT COUNT(*) FROM contact_message_submissions WHERE ip=? AND created_at > ?", ip, stamp(now.Add(-24*time.Hour))).Scan(&count); err != nil {
 		serverError(w, err)
 		return
 	}
 	if count >= 3 {
-		http.Error(w, "Please try again later.", http.StatusTooManyRequests)
+		w.Header().Set("Retry-After", "86400")
+		noStore(w)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusTooManyRequests)
+		fmt.Fprint(w, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Please try again later | England Software</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#eef3ff;color:#17232b;font:16px/1.6 system-ui,sans-serif}main{max-width:560px;margin:24px;padding:36px;background:#fff;border:1px solid #b9c9ea;box-shadow:12px 12px 0 #3458c926}h1{font-size:30px;line-height:1.2}a{color:#254ba6;font-weight:700}</style></head><body><main><h1>Please try again later</h1><p>You have already emailed us 3 times. Please wait 24 hours before trying again. Feel free to contact me at <a href="tel:+19185008396">918-500-8396</a> for quicker assistance.</p><p><a href="/#contact">Back to the website</a></p></main></body></html>`)
 		return
 	}
 	if _, err = tx.Exec("INSERT INTO contact_messages(name,email,message,created_at,followup_opt_in) VALUES(?,?,?,?,?)", name, email, body, stamp(now), followupOptIn); err != nil {
@@ -351,9 +367,17 @@ func (a *application) contact(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	if _, err = tx.Exec("INSERT INTO contact_email_jobs(name,email,message,followup_opt_in,next_attempt_at) VALUES(?,?,?,?,?)", name, email, body, followupOptIn, stamp(now)); err != nil {
+		serverError(w, err)
+		return
+	}
 	if err = tx.Commit(); err != nil {
 		serverError(w, err)
 		return
+	}
+	select {
+	case a.emailWake <- struct{}{}:
+	default:
 	}
 	http.Redirect(w, r, "/?contact=sent#contact", http.StatusSeeOther)
 }

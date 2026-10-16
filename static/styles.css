@@ -316,6 +316,7 @@ html{scroll-padding-top:146px}
 .contact-form-intro{margin:0 0 3px;color:#34494c;font-size:14px;font-weight:600;line-height:1.45}
 .contact-form-intro a{color:var(--accent-ink);font-weight:800;text-decoration-thickness:2px;text-underline-offset:3px}
 .contact-form-intro a:hover{color:#17232b}
+.message-count{justify-self:end;color:#52636a;font-size:11px;font-variant-numeric:tabular-nums}
 .contact-copy>a:hover{color:var(--accent-ink)}
 .contact-form .form-field textarea{min-height:115px}
 

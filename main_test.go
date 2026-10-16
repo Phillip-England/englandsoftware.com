@@ -178,8 +178,8 @@ func TestContactHoneypotDailyLimitAndPruning(t *testing.T) {
 			t.Fatalf("accepted submission %d: %d", i+1, got)
 		}
 	}
-	if got := request(t, a, http.MethodPost, "/contact", form, nil).Code; got != http.StatusTooManyRequests {
-		t.Fatalf("fourth submission: %d", got)
+	if got := request(t, a, http.MethodPost, "/contact", form, nil); got.Code != http.StatusTooManyRequests || !strings.Contains(got.Body.String(), "918-500-8396") {
+		t.Fatalf("fourth submission: %d, body %q", got.Code, got.Body.String())
 	}
 	if err := a.db.QueryRow("SELECT COUNT(*) FROM contact_messages").Scan(&count); err != nil || count != 3 {
 		t.Fatalf("stored messages: %d, %v", count, err)

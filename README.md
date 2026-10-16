@@ -16,19 +16,22 @@ make run
 
 Open <http://localhost:8493>. The admin sign in page is at <http://localhost:8493/admin/login>; it is intentionally absent from the public navigation. Use `make run APP_PORT=9000` to choose another port.
 
-`make run` creates `config/.env` with a random admin password on the first run and prints the credentials. Later runs reuse that file. The server creates `data/main.sqlite` and the `data` directory when needed. The database and credentials file are ignored by Git. To run `go run .` directly or use Docker, create a credentials file containing:
+`make run` creates `config/.env` with a random admin password on the first run and prints the credentials. Add the egate key and recipient address to that file, then run `make run` again; later runs reuse it. The server creates `data/main.sqlite` and the `data` directory when needed. The database and credentials file are ignored by Git. To run `go run .` directly or use Docker, create a credentials file containing:
 
 ```dotenv
 ENGLANDSOFTWARE_ADMIN_USERNAME=admin
 ENGLANDSOFTWARE_ADMIN_PASSWORD=<your password>
 ENGLANDSOFTWARE_SECURE_COOKIES=false
+EGATE_HOST=https://englandsoftware.com
+EGATE_API_KEY=<registered egate app key>
+CONTACT_EMAIL_TO=<your inbox address>
 ```
 
 The local `config/.env` contains the admin password in plaintext. To change it, edit `ENGLANDSOFTWARE_ADMIN_PASSWORD` directly. Environment variables supplied to the process override values in `.env`.
 
 ## Admin and form behavior
 
-- The contact form saves name, email, message, and an optional consulting/application email follow-up preference to SQLite. The preference defaults to off and appears in the admin inbox. Its hidden honeypot silently discards bot submissions, and each IP can send three messages in a rolling 24 hour period.
+- The contact form saves name, email, message, and an optional consulting/application email follow-up preference to SQLite. The preference defaults to off and appears in the admin inbox. Eight hidden honeypot fields silently discard bot submissions, and each IP can send three messages in a rolling 24 hour period. Accepted messages are queued for egate delivery by a separate worker process; see [EMAIL_FORM.md](EMAIL_FORM.md) for setup and delivery operations.
 - Admin sign in checks the password from `config/.env`. A filled honeypot or wrong credentials count as failed attempts. Five failures from one IP within a rolling 24 hour period cause a 24 hour lockout.
 - Failed login rows and contact submission counters older than 24 hours, plus expired lockouts and sessions, are deleted on startup, hourly, and as relevant requests arrive. SQLite reuses pages freed by deleted rows, so the rate-limit tables do not accumulate daily history. Contact messages themselves remain until deleted from the inbox.
 - Admin sessions expire after 24 hours. The inbox can mark messages read or unread and delete them. These actions require a session and a CSRF token.

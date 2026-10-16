@@ -172,9 +172,18 @@ window.addEventListener("popstate", () => {
 
 updatePagePosition();
 
+const contactMessage = document.querySelector("#contact-message");
+const contactMessageCount = document.querySelector("#contact-message-count");
+if (contactMessage && contactMessageCount) {
+  const updateMessageCount = () => {
+    contactMessageCount.textContent = `${(3000 - contactMessage.value.length).toLocaleString()} characters left`;
+  };
+  contactMessage.addEventListener("input", updateMessageCount);
+  updateMessageCount();
+}
 if (new URLSearchParams(window.location.search).get("contact") === "sent") {
   const status = document.querySelector("#contact-status");
-  if (status) status.textContent = "Thanks. Your message has been sent.";
+  if (status) status.textContent = "Thanks. Your message has been received. I'll get back to you soon.";
   if (!window.location.hash) requestAnimationFrame(() => scrollToChapter(chapters.length - 1, "auto"));
 } else if (window.location.hash && sceneMode.matches) {
   const index = chapters.findIndex(chapter => `#${chapter.id}` === window.location.hash);
