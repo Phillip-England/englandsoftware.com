@@ -51,24 +51,19 @@ func main() {
 		trustedProxies = append(trustedProxies, prefix)
 	}
 	app, err := newApp("data/main.sqlite", appConfig{
-		username:       os.Getenv("ENGLANDSOFTWARE_ADMIN_USERNAME"),
-		password:       os.Getenv("ENGLANDSOFTWARE_ADMIN_PASSWORD"),
-		secureCookies:  os.Getenv("ENGLANDSOFTWARE_SECURE_COOKIES") == "true",
-		trustedProxies: trustedProxies,
+		username:        os.Getenv("ENGLANDSOFTWARE_ADMIN_USERNAME"),
+		password:        os.Getenv("ENGLANDSOFTWARE_ADMIN_PASSWORD"),
+		secureCookies:   os.Getenv("ENGLANDSOFTWARE_SECURE_COOKIES") == "true",
+		messageCapacity: messageCapacity(),
+		trustedProxies:  trustedProxies,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer app.db.Close()
+	app.email = emailConfig
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if len(os.Args) > 1 && os.Args[1] == "email-worker" {
-		if err := app.runEmailWorker(ctx, emailConfig); err != nil && !errors.Is(err, context.Canceled) {
-			log.Fatal(err)
-		}
-		return
-	}
-	go app.superviseEmailWorker(ctx)
 	go func() {
 		ticker := time.NewTicker(time.Hour)
 		defer ticker.Stop()
@@ -134,4 +129,16 @@ func publicPages(mux *http.ServeMux) {
 		}
 		http.ServeFileFS(w, r, staticFiles, fmt.Sprintf("static/%s", page))
 	})
+}
+
+func messageCapacity() int {
+	v := os.Getenv("ENGLANDSOFTWARE_MESSAGE_CAPACITY")
+	if v == "" {
+		return 200
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 1 {
+		log.Fatal("ENGLANDSOFTWARE_MESSAGE_CAPACITY must be a positive integer")
+	}
+	return n
 }

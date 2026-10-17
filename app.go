@@ -35,6 +35,7 @@ var contactHoneypots = [...]string{"website", "company_url", "fax_number", "midd
 type appConfig struct {
 	username, password string
 	secureCookies      bool
+	messageCapacity    int
 	trustedProxies     []netip.Prefix
 }
 type application struct {
@@ -43,7 +44,7 @@ type application struct {
 	dataPath   string
 	articleDir string
 	articleMu  sync.Mutex
-	emailWake  chan struct{}
+	email      emailSettings
 }
 type message struct {
 	ID                                int64
@@ -119,10 +120,6 @@ func newApp(path string, cfg appConfig) (*application, error) {
 		`CREATE TABLE IF NOT EXISTS login_failures (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, created_at DATETIME NOT NULL)`,
 		`CREATE INDEX IF NOT EXISTS idx_login_failures_ip_created_at ON login_failures (ip, created_at)`,
 		`CREATE TABLE IF NOT EXISTS banned_ips (ip TEXT PRIMARY KEY, banned_until DATETIME NOT NULL, created_at DATETIME NOT NULL)`,
-		`CREATE TABLE IF NOT EXISTS contact_message_submissions (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, created_at DATETIME NOT NULL)`,
-		`CREATE INDEX IF NOT EXISTS idx_contact_message_submissions_ip_created_at ON contact_message_submissions (ip, created_at)`,
-		`CREATE TABLE IF NOT EXISTS contact_email_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, followup_opt_in INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TEXT NOT NULL, last_error TEXT NOT NULL DEFAULT '')`,
-		`CREATE INDEX IF NOT EXISTS idx_contact_email_jobs_due ON contact_email_jobs (status, next_attempt_at, id)`,
 		`CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TEXT NOT NULL)`,
 	} {
 		if _, err = db.Exec(stmt); err != nil {
@@ -166,7 +163,14 @@ func newApp(path string, cfg appConfig) (*application, error) {
 			return nil, err
 		}
 	}
-	a := &application{db: db, cfg: cfg, dataPath: path, articleDir: "articles", emailWake: make(chan struct{}, 1)}
+	if cfg.messageCapacity == 0 {
+		cfg.messageCapacity = 200
+	}
+	a := &application{db: db, cfg: cfg, dataPath: path, articleDir: "articles"}
+	if _, err = db.Exec("DELETE FROM contact_messages WHERE id IN (SELECT id FROM contact_messages ORDER BY id DESC LIMIT -1 OFFSET ?)", cfg.messageCapacity); err != nil {
+		db.Close()
+		return nil, err
+	}
 	if err = a.importLegacyArticles(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("import SQLite articles: %w", err)
@@ -243,7 +247,6 @@ func (a *application) prune(now time.Time) error {
 	}{
 		{"DELETE FROM login_failures WHERE created_at < ?", stamp(now.Add(-24 * time.Hour))},
 		{"DELETE FROM banned_ips WHERE banned_until <= ?", stamp(now)},
-		{"DELETE FROM contact_message_submissions WHERE created_at <= ?", stamp(now.Add(-24 * time.Hour))},
 		{"DELETE FROM admin_sessions WHERE expires_at <= ?", stamp(now)},
 	} {
 		if _, err := a.db.Exec(q.sql, q.arg); err != nil {
@@ -335,39 +338,17 @@ func (a *application) contact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	now := time.Now().UTC()
-	ip := a.clientIP(r)
 	tx, err := a.db.Begin()
 	if err != nil {
 		serverError(w, err)
 		return
 	}
 	defer tx.Rollback()
-	if _, err = tx.Exec("DELETE FROM contact_message_submissions WHERE created_at <= ?", stamp(now.Add(-24*time.Hour))); err != nil {
-		serverError(w, err)
-		return
-	}
-	var count int
-	if err = tx.QueryRow("SELECT COUNT(*) FROM contact_message_submissions WHERE ip=? AND created_at > ?", ip, stamp(now.Add(-24*time.Hour))).Scan(&count); err != nil {
-		serverError(w, err)
-		return
-	}
-	if count >= 3 {
-		w.Header().Set("Retry-After", "86400")
-		noStore(w)
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusTooManyRequests)
-		fmt.Fprint(w, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Please try again later | England Software</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#eef3ff;color:#17232b;font:16px/1.6 system-ui,sans-serif}main{max-width:560px;margin:24px;padding:36px;background:#fff;border:1px solid #b9c9ea;box-shadow:12px 12px 0 #3458c926}h1{font-size:30px;line-height:1.2}a{color:#254ba6;font-weight:700}</style></head><body><main><h1>Please try again later</h1><p>You have already emailed us 3 times. Please wait 24 hours before trying again. Feel free to contact me at <a href="tel:+19185008396">918-500-8396</a> for quicker assistance.</p><p><a href="/#contact">Back to the website</a></p></main></body></html>`)
-		return
-	}
 	if _, err = tx.Exec("INSERT INTO contact_messages(name,email,message,created_at,followup_opt_in) VALUES(?,?,?,?,?)", name, email, body, stamp(now), followupOptIn); err != nil {
 		serverError(w, err)
 		return
 	}
-	if _, err = tx.Exec("INSERT INTO contact_message_submissions(ip,created_at) VALUES(?,?)", ip, stamp(now)); err != nil {
-		serverError(w, err)
-		return
-	}
-	if _, err = tx.Exec("INSERT INTO contact_email_jobs(name,email,message,followup_opt_in,next_attempt_at) VALUES(?,?,?,?,?)", name, email, body, followupOptIn, stamp(now)); err != nil {
+	if _, err = tx.Exec("DELETE FROM contact_messages WHERE id IN (SELECT id FROM contact_messages ORDER BY id DESC LIMIT -1 OFFSET ?)", a.cfg.messageCapacity); err != nil {
 		serverError(w, err)
 		return
 	}
@@ -375,9 +356,10 @@ func (a *application) contact(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
-	select {
-	case a.emailWake <- struct{}{}:
-	default:
+	if err = a.email.send(r.Context(), emailMessage{name: name, email: email, message: body, followup: followupOptIn}, a.clientIP(r)); err != nil {
+		log.Printf("contact gateway acceptance failed: %v", err)
+		http.Error(w, "Your message was saved, but email delivery could not be confirmed. Please call 918-500-8396 if urgent.", http.StatusBadGateway)
+		return
 	}
 	http.Redirect(w, r, "/?contact=sent#contact", http.StatusSeeOther)
 }

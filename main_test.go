@@ -7,6 +7,7 @@ import (
 	"net/netip"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,9 @@ func testApp(t *testing.T) *application {
 		t.Fatal(err)
 	}
 	a.articleDir = filepath.Join(t.TempDir(), "articles")
+	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
+	a.email = emailSettings{host: gateway.URL, key: "test-key", recipient: "owner@example.com", client: gateway.Client()}
+	t.Cleanup(gateway.Close)
 	t.Cleanup(func() { a.db.Close() })
 	return a
 }
@@ -161,37 +165,47 @@ func TestPublicOffersMatchBusinessBrief(t *testing.T) {
 	}
 }
 
-func TestContactHoneypotDailyLimitAndPruning(t *testing.T) {
+func TestContactInboxCapacity(t *testing.T) {
 	a := testApp(t)
-	form := url.Values{"name": {"Alex"}, "email": {"alex@example.com"}, "message": {"Project inquiry"}}
-	form.Set("website", "bot-fill")
+	a.cfg.messageCapacity = 3
+	form := url.Values{"name": {"Alex"}, "email": {"alex@example.com"}}
+	form.Set("website", "bot")
+	form.Set("message", "ignored")
 	if got := request(t, a, http.MethodPost, "/contact", form, nil).Code; got != http.StatusSeeOther {
-		t.Fatalf("honeypot response: %d", got)
-	}
-	var count int
-	if err := a.db.QueryRow("SELECT COUNT(*) FROM contact_message_submissions").Scan(&count); err != nil || count != 0 {
-		t.Fatalf("honeypot counted as submission: %d, %v", count, err)
+		t.Fatalf("honeypot: %d", got)
 	}
 	form.Del("website")
-	for i := 0; i < 3; i++ {
+	for i := 1; i <= 4; i++ {
+		form.Set("message", strconv.Itoa(i))
 		if got := request(t, a, http.MethodPost, "/contact", form, nil).Code; got != http.StatusSeeOther {
-			t.Fatalf("accepted submission %d: %d", i+1, got)
+			t.Fatalf("submission %d: %d", i, got)
 		}
 	}
-	if got := request(t, a, http.MethodPost, "/contact", form, nil); got.Code != http.StatusTooManyRequests || !strings.Contains(got.Body.String(), "918-500-8396") {
-		t.Fatalf("fourth submission: %d, body %q", got.Code, got.Body.String())
+	var count, minID, maxID int
+	if err := a.db.QueryRow("SELECT COUNT(*),MIN(id),MAX(id) FROM contact_messages").Scan(&count, &minID, &maxID); err != nil || count != 3 || minID != 2 || maxID != 4 {
+		t.Fatalf("capacity: count=%d min=%d max=%d err=%v", count, minID, maxID, err)
 	}
-	if err := a.db.QueryRow("SELECT COUNT(*) FROM contact_messages").Scan(&count); err != nil || count != 3 {
-		t.Fatalf("stored messages: %d, %v", count, err)
-	}
-	if _, err := a.db.Exec("UPDATE contact_message_submissions SET created_at=?", stamp(time.Now().UTC().Add(-25*time.Hour))); err != nil {
+}
+func TestInboxCapacityAppliesAtStartup(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "main.sqlite")
+	a, err := newApp(path, appConfig{username: "admin", password: "correct-password", messageCapacity: 5})
+	if err != nil {
 		t.Fatal(err)
 	}
-	if got := request(t, a, http.MethodPost, "/contact", form, nil).Code; got != http.StatusSeeOther {
-		t.Fatalf("submission after window: %d", got)
+	for i := 0; i < 5; i++ {
+		if _, err := a.db.Exec("INSERT INTO contact_messages(name,email,message,created_at) VALUES('Alex','alex@example.com','Hi',?)", stamp(time.Now())); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if err := a.db.QueryRow("SELECT COUNT(*) FROM contact_message_submissions").Scan(&count); err != nil || count != 1 {
-		t.Fatalf("old rate-limit rows retained: %d, %v", count, err)
+	a.db.Close()
+	a, err = newApp(path, appConfig{username: "admin", password: "correct-password", messageCapacity: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.db.Close()
+	var count, first int
+	if err := a.db.QueryRow("SELECT COUNT(*),MIN(id) FROM contact_messages").Scan(&count, &first); err != nil || count != 2 || first != 4 {
+		t.Fatalf("startup capacity: count=%d first=%d err=%v", count, first, err)
 	}
 }
 func TestLoginHoneypotLockoutAndExpiry(t *testing.T) {

@@ -31,10 +31,16 @@
       "required": false
     },
     {
-      "name": "EGATE_HOST",
-      "description": "Base URL of the egate email gateway. Defaults to https://englandsoftware.com.",
-      "example": "https://englandsoftware.com",
+      "name": "ENGLANDSOFTWARE_MESSAGE_CAPACITY",
+      "description": "Maximum contact messages retained in the admin inbox; oldest messages are removed when exceeded. Defaults to 200.",
+      "example": "200",
       "required": false
+    },
+    {
+      "name": "EGATE_HOST",
+      "description": "Public HTTPS base URL of the egate email gateway; set this to its actual production domain, not the site URL or egate listen interface.",
+      "example": "https://egate.englandsoftware.com",
+      "required": true
     },
     {
       "name": "EGATE_API_KEY",

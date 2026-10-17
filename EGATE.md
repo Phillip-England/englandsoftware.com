@@ -4,18 +4,18 @@ egate is an HTTP email gateway. Use the HTTP API directly with your application'
 
 ## Gateway and credentials
 
-- Gateway base URL: `https://englandsoftware.com`
-- Email endpoint: `POST https://englandsoftware.com/v1/email`
-- Health check: `GET https://englandsoftware.com/healthz`
+- Gateway base URL (example): `https://egate.englandsoftware.com`
+- Email endpoint: `POST https://egate.englandsoftware.com/v1/email`
+- Health check: `GET https://egate.englandsoftware.com/healthz`
 - Sender email: `noreply@messages.englandsoftware.com`
 
-An egate administrator signs in at `https://englandsoftware.com/login`, registers this application under **Apps**, and gives you its `eg_...` app key. The key is displayed only once. If it is lost or revoked, register a replacement app and update the calling application's secret.
+Replace the example hostname with the actual deployed egate hostname. An egate administrator signs in at `https://egate.englandsoftware.com/login`, registers this application under **Apps**, and gives you its `eg_...` app key. The key is displayed only once. If it is lost or revoked, register a replacement app and update the calling application's secret.
 
-Set `EGATE_HOST=https://englandsoftware.com` in the calling application's server-side configuration and set `EGATE_API_KEY` to its registered app key in server-side secret storage. The host is supplied by this guide; the key must still be established for this application. Never commit, log, or expose the key to browser code. These variables belong to the calling application. On the egate server, `EGATE_HOST` is a separate setting for its listen address.
+Set `EGATE_HOST=https://egate.englandsoftware.com` in the calling application's server-side configuration and set `EGATE_API_KEY` to its registered app key in server-side secret storage. The hostname shown here is an example; the key must still be established for this application. Never commit, log, or expose the key to browser code. These variables belong to the calling application. On the egate server, `EGATE_HOST` is a separate setting for its listen address.
 
 ## Send an email
 
-Make an HTTP `POST` request to `https://englandsoftware.com/v1/email` with these headers:
+Make an HTTP `POST` request to `https://egate.englandsoftware.com/v1/email` with these headers:
 
 ```http
 Authorization: Bearer <EGATE_API_KEY>
@@ -37,7 +37,7 @@ The JSON object has these fields:
 Example request using the configured key:
 
 ```sh
-curl 'https://englandsoftware.com/v1/email' \
+curl 'https://egate.englandsoftware.com/v1/email' \
   -H "Authorization: Bearer $EGATE_API_KEY" \
   -H 'Content-Type: application/json' \
   -d '{
@@ -50,7 +50,7 @@ curl 'https://englandsoftware.com/v1/email' \
   }'
 ```
 
-The gateway accepts one JSON object per request, with a maximum request body of 1 MiB. It returns the email provider's HTTP status and JSON body on a successful provider request, typically including an `id`. An invalid JSON body or missing required field returns `400`; a missing, invalid, or revoked app key returns `401`; a provider connection failure returns `502`. Other provider error statuses and bodies pass through. Treat every non-2xx status as a failed send. Do not show raw provider errors to end users. Set a request timeout and avoid automatic retries after an uncertain result, which could duplicate an email.
+The gateway accepts one JSON object per request, with a maximum body of 1 MiB. The calling app may send `X-Egate-Client-IP` with the validated visitor IP for its per-IP allowance. A valid request returns `200 OK` with `{"status":"accepted"}` whether the gateway queues it or silently suppresses it under the app's limit. This confirms receipt, not provider delivery. Invalid JSON or missing required fields returns `400`; a missing, invalid, or revoked app key returns `401`; a database failure returns `503`. Treat non-2xx as a failed acceptance. Set a request timeout and investigate an uncertain response before resending, since egate may already have accepted it. Egate handles delivery retries and removes email jobs and IP records after 24 hours.
 
 ## Instructions for a coding assistant
 
